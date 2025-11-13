@@ -1,10 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
-# === PERFIL USUARIO ===
 class Usuarios(models.Model):
-    idUser = models.ForeignKey(User, on_delete=models.CASCADE, related_name="perfil_usuario")
+    # Clave foránea al usuario de autenticación de Django
+    idUser = models.ForeignKey(User, on_delete=models.CASCADE, related_name="Usuarios")
     edad = models.IntegerField()
     peso = models.DecimalField(max_digits=5, decimal_places=2)
     altura = models.DecimalField(max_digits=5, decimal_places=2)
@@ -14,11 +13,19 @@ class Usuarios(models.Model):
         ('alto', 'Alto')
     ])
 
+    #  NUEVO CAMPO: Lugar Preferido de Entrenamiento
+    lugar_entrenamiento = models.CharField(max_length=20, choices=[
+        ('casa', 'En Casa'),
+        ('gimnasio', 'Gimnasio'),
+        ('aire_libre', 'Aire Libre')
+    ], default='casa') # Puedes poner un valor por defecto
+
     def __str__(self):
         return f"Perfil de {self.idUser.username}"
 
 
-# === CATEGORÍAS Y EJERCICIOS ===
+
+#  CATEGORÍAS Y EJERCICIOS 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
 
@@ -43,7 +50,7 @@ class Ejercicio(models.Model):
         return f"{self.nombre} ({self.nivel})"
 
 
-# === RUTINAS Y RELACIÓN CON EJERCICIOS ===
+#  RUTINAS Y RELACIÓN CON EJERCICIOS 
 class Rutina(models.Model):
     entrenador = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rutinas_creadas")
     nombre = models.CharField(max_length=100)
@@ -83,7 +90,7 @@ class UsuarioRutina(models.Model):
         return f"{self.usuario.username} - {self.rutina.nombre} ({self.estado})"
 
 
-# === HISTORIAL DE ACTIVIDADES ===
+#  HISTORIAL DE ACTIVIDADES 
 class HistorialActividades(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="historial_actividades")
     rutina = models.ForeignKey(Rutina, on_delete=models.SET_NULL, null=True, blank=True)
@@ -97,20 +104,27 @@ class HistorialActividades(models.Model):
         return f"{self.usuario.username} - {self.fecha_realizacion.strftime('%Y-%m-%d')}"
 
 
-# Asegúrate de que tu modelo User esté importado correctamente
 
 # === PROGRESO Y COMPARACIÓN ===
 
 class ProgresoUsuario(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progresos")
     peso_actual = models.DecimalField(max_digits=5, decimal_places=2)
-    medidas = models.CharField(max_length=100)
+    hombros = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    espalda = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    abdomen = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    gluteos = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    pierna1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    pierna2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    brazo1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    brazo2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     fecha_registro = models.DateField(auto_now_add=True)
     foto_url = models.CharField(max_length=255, null=True, blank=True)
     analisis_ia = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Progreso de {self.usuario.username} - {self.fecha_registro}"
+
 
 
 class ComparacionIA(models.Model):
@@ -127,7 +141,7 @@ class ComparacionIA(models.Model):
         return f"Comparación de {self.usuario.username} ({self.fecha_comparacion.date()})"
 
 
-# === LOGROS ===
+#  LOGROS 
 class Logro(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -150,7 +164,7 @@ class UsuarioLogro(models.Model):
         return f"{self.usuario.username} - {self.logro.nombre}"
 
 
-# === CONTENIDO DE BIENESTAR ===
+# CONTENIDO DE BIENESTAR 
 class BienestarContenido(models.Model):
     autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contenidos_bienestar")
     titulo = models.CharField(max_length=150)
@@ -167,7 +181,7 @@ class BienestarContenido(models.Model):
         return f"{self.titulo} ({self.tipo})"
 
 
-# === COMUNIDAD / FORO ===
+# COMUNIDAD / FORO 
 class ComunidadPost(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     contenido = models.TextField()
@@ -200,7 +214,7 @@ class ComentarioPost(models.Model):
         return f"Comentario de {self.usuario.username} en {self.post.id}"
 
 
-# === CHAT ENTRE USUARIO Y ENTRENADOR ===
+#  CHAT ENTRE USUARIO Y ENTRENADOR 
 class Conversacion(models.Model):
     entrenador = models.ForeignKey(User, on_delete=models.CASCADE, related_name="conversaciones_entrenador")
     alumno = models.ForeignKey(User, on_delete=models.CASCADE, related_name="conversaciones_alumno")

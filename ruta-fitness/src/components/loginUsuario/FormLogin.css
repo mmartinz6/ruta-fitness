@@ -1,0 +1,115 @@
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Asegura que ocupe toda la altura de la vista */
+    background-color: #f4f7f6; /* Color de fondo muy claro, cámbialo a tu gusto */
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px; /* Ancho máximo estándar para formularios */
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    background-color: #ffffff; /* Fondo blanco para el formulario */
+}
+
+/* ----------------------------------
+ * 2. Títulos y Texto
+ * ---------------------------------- */
+
+.login-title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+}
+
+.register-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.error-message {
+    color: #d9534f; /* Rojo para errores */
+    background-color: #fdd;
+    border: 1px solid #d9534f;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* ----------------------------------
+ * 3. Elementos del Formulario
+ * ---------------------------------- */
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box; /* Importante para el padding */
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.form-input:focus {
+    border-color: #007bff; /* Color primario al enfocar */
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+/* ----------------------------------
+ * 4. Botones
+ * ---------------------------------- */
+
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #28a745; /* Verde para éxito/acceso, ¡cámbialo! */
+    color: white;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-button:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.submit-button:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+}
+
+.navigate-button {
+    background: none;
+    border: none;
+    color: #007bff; /* Azul para el enlace, ¡cámbialo! */
+    cursor: pointer;
+    padding: 0;
+    margin-left: 5px;
+    text-decoration: underline;
+}
+
+.navigate-button:hover {
+    color: #0056b3;
+}

@@ -6,6 +6,8 @@ urlpatterns = [
     path('usuarios/', views.UsuariosListCreateView.as_view(), name='usuarios-list-create'),
     path('usuarios/<int:pk>/', views.UsuariosDetailView.as_view(), name='usuarios-detail'),
 
+    path('usuariosD/', views.UserDListCreateView.as_view(), name='usuariosd-list-create'),
+
     # === CATEGORÍA ===
     path('categorias/', views.CategoriaListCreateView.as_view(), name='categoria-list-create'),
     path('categorias/<int:pk>/', views.CategoriaDetailView.as_view(), name='categoria-detail'),
