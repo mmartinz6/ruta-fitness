@@ -1,52 +1,54 @@
-import React from 'react';
-import './FormLogin.css' // Asumo que este archivo existe y tiene los estilos
+import React, { useState } from 'react';
 
-// Este componente solo se encarga de mostrar la interfaz
-function FormLogin({ username, password, setUsername, setPassword, onSubmit, error, loading, onNavigate }) {
-    return (
-        <div className="login-container">
-            <div className="login-card">
-                <h2 className="login-title">Iniciar Sesión</h2>
-                {/* El formulario llama a la función onSubmit que viene del contenedor (LoginPage) */}
-                <form onSubmit={onSubmit} className="login-form">
-                    <div className="form-group">
-                        <label className="form-label">Usuario:</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Contraseña:</label>
-                        <input
-                            type="password"
-                            className="form-input"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    {/* Muestra errores de la API */}
-                    {error && <div className="error-message">{error}</div>}
-                    <button type="submit" className="submit-button" disabled={loading}>
-                        {loading ? 'Cargando...' : 'Acceder'}
-                    </button>
-                </form>
+import login from '../../services/servicesLogin';
 
-                <p className="register-text">
-                    ¿No tienes cuenta?
-                    {/* Botón para navegar a la página de registro */}
-                    <button onClick={() => onNavigate("Registro")} className="navigate-button">
-                        Regístrate aquí
-                    </button>
-                </p>
-            </div>
-        </div>
-    );
+function FormLogin() {
+  const [correo, setCorreo] = useState('');
+  const [password, setPassword] = useState('');
+
+  async function manejarLogin() {
+    try {
+      const datos = await login.loginUsuario({
+        username: correo,
+        password: password,
+      });
+
+      console.log("Login exitoso:", datos);
+
+      // Guarda los tokens en localStorage
+      localStorage.setItem("access", datos.access);
+      localStorage.setItem("refresh", datos.refresh);
+
+      alert("Inicio de sesión exitoso");
+      // Aquí podrías redirigir al usuario a otra página
+      // window.location.href = "/inicio";
+
+    } catch (error) {
+      alert("Error: usuario o contraseña incorrectos");
+    }
+  }
+
+  return (
+    <div>
+      <h1>Iniciar Sesión</h1>
+
+      <label>Correo:</label><br />
+      <input
+        type="text"
+        value={correo}
+        onChange={(e) => setCorreo(e.target.value)}
+      /><br />
+
+      <label>Contraseña:</label><br />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      /><br />
+
+      <button onClick={manejarLogin}>Ingresar</button>
+    </div>
+  );
 }
-
 
 export default FormLogin;

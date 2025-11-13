@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+
     # === PERFIL USUARIO ===
     path('usuarios/', views.UsuariosListCreateView.as_view(), name='usuarios-list-create'),
     path('usuarios/<int:pk>/', views.UsuariosDetailView.as_view(), name='usuarios-detail'),
