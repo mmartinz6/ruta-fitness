@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
@@ -7,36 +7,23 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import DashboardPage from '../pages/DashboardPage';
 import Registro from '../pages/Registro'; 
 import FormLoginContainer from '../pages/FormLogin';
-
 import BienestarPage from "./../pages/Bienestar";
-=======
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Inicio from "../pages/Inicio";
-import Registro from "../pages/Registro";
 import Login from "../pages/Login";
 import Contacto from "../pages/Contacto";
->>>>>>> e9613ade3e485c026ae572bb08038a9a0117732c
 
 
-function AppRouting() {
+function Routing() {
   return (
-<<<<<<< HEAD
+
     <BrowserRouter>
       <Routes>
         {/* Rutas Públicas */}
         <Route path='/registro' element={<Registro />} />
         <Route path='/login' element={<FormLoginContainer />} />
-=======
-      <Router>
-        <Routes>
           <Route path='/inicio' element={<Inicio />} />
-          <Route path='/registro' element={<Registro />} />
           <Route path='/login' element={<Login />} />
           <Route path='/contacto' element={<Contacto />} />
->>>>>>> e9613ade3e485c026ae572bb08038a9a0117732c
-
-        {/* Ruta raíz - muestra la página de Bienestar por defecto */}
-        <Route path='/' element={<BienestarPage />} />
 
         {/* Ruta del Dashboard */}
         <Route path='/dashboard' element={<DashboardPage />} />
@@ -54,4 +41,4 @@ function AppRouting() {
   );
 }
 
-export default AppRouting;
+export default Routing;
