@@ -1,17 +1,17 @@
 import React from 'react'
 
 import Navbar from '../components/navbar/Navbar'
-import FormRegistro from '../components/registroUsuario/FormRegistro'
+import FormLogin from '../components/loginUsuario/FormLogin'
 import Footer from '../components/footer/Footer'
 
-function Registro() {
+function Login() {
   return (
     <div>
         <Navbar />
-        <FormRegistro />
+        <FormLogin />
         <Footer />
     </div>
   )
 }
 
-export default Registro
+export default Login

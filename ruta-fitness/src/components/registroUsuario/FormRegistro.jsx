@@ -1,23 +1,24 @@
-import React, { useState } from 'react'
-import llamados from '../../services/ServicesUsuarios'
-import llamadosD from '../../services/ServicesUserD'
+import React, { useState } from "react";
+import llamados from "../../services/ServicesUsuarios";
+import llamadosD from "../../services/ServicesUserD";
+import llamadosGrupo from "../../services/servicesGrupo"
 
 function FormRegistro() {
-  const [nombre, setNombre] = useState("")
-  const [apellido, setApellido] = useState("")
-  const [correo, setCorreo] = useState("")
-  const [password, setPassword] = useState("")
-  const [edad, setEdad] = useState("")
-  const [peso, setPeso] = useState("")
-  const [altura, setAltura] = useState("")
-  const [nivelActividad, setNivelActividad] = useState("")
-  const [lugarEntrenamiento, setLugarEntrenamiento] = useState("")
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [edad, setEdad] = useState("");
+  const [peso, setPeso] = useState("");
+  const [altura, setAltura] = useState("");
+  const [nivelActividad, setNivelActividad] = useState("");
+  const [lugarEntrenamiento, setLugarEntrenamiento] = useState("");
 
   async function cargarDatos() {
     try {
-      //Crear usuario base
       const userData = await llamadosD.postUsuariosD({
-        username: correo,
+        username: username,
         email: correo,
         first_name: nombre,
         last_name: apellido,
@@ -25,10 +26,6 @@ function FormRegistro() {
       });
 
 
-
-      console.log("Usuario base creado:", userData);
-
-      //Crear perfil extendido
       const usuarioData = {
         idUser: userData.id,
         edad,
@@ -38,8 +35,14 @@ function FormRegistro() {
         lugar_entrenamiento: lugarEntrenamiento,
       };
 
-      const respuesta = await llamados.postUsuarios(usuarioData);
-      console.log("Perfil Usuarios creado:", respuesta);
+      await llamados.postUsuarios(usuarioData);
+
+      /* const info3 = {
+        user: userData.id, 
+        group: 3
+      } */
+
+      const grupoData = await llamadosGrupo.postGrupos({user: userData.id, group: 3})
 
       alert("Cuenta creada correctamente");
     } catch (error) {
@@ -49,50 +52,157 @@ function FormRegistro() {
   }
 
   return (
-    <div>
-      <h1>Crear Cuenta</h1>
-      <p>Completa tus datos para recibir una rutina personalizada</p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white py-12">
+      <div className="max-w-3xl mx-auto px-6">
+        
+        {/* Encabezado */}
+        <div className="mb-10 text-center">
+          <h1 className="text-3xl font-semibold text-gray-900">Crear Cuenta</h1>
+          <p className="text-gray-600">
+            Completa tus datos para recibir una rutina personalizada
+          </p>
+        </div>
 
-      <label>Nombre:</label><br />
-      <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} /><br />
+        {/* Card */}
+        <div className="bg-white shadow-lg rounded-2xl p-10 border border-gray-200">
 
-      <label>Apellido:</label><br />
-      <input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} /><br />
+          {/* FORMULARIO */}
+          <div className="space-y-6">
 
-      <label>Correo:</label><br />
-      <input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} /><br />
+            {/* GRID 2 COLUMNAS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <div>
+                <label className="block text-gray-800 mb-1">Nombre:</label>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                />
+              </div>
 
-      <label>Contraseña:</label><br />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /><br />
+              <div>
+                <label className="block text-gray-800 mb-1">Apellido:</label>
+                <input
+                  type="text"
+                  value={apellido}
+                  onChange={(e) => setApellido(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                />
+              </div>
 
-      <label>Edad:</label><br />
-      <input type="number" value={edad} onChange={(e) => setEdad(e.target.value)} /><br />
+              <div>
+                <label className="block text-gray-800 mb-1">Correo:</label>
+                <input
+                  type="email"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                />
+              </div>
 
-      <label>Peso (kg):</label><br />
-      <input type="number" value={peso} onChange={(e) => setPeso(e.target.value)} /><br />
+              <div>
+                <label className="block text-gray-800 mb-1">Nombre de usuario:</label>
+                <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                />
+              </div>
 
-      <label>Altura (cm):</label><br />
-      <input type="number" value={altura} onChange={(e) => setAltura(e.target.value)} /><br />
+              <div>
+                <label className="block text-gray-800 mb-1">Contraseña:</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                />
+              </div>
+            </div>
 
-      <label>Nivel de Actividad:</label><br />
-      <select value={nivelActividad} onChange={(e) => setNivelActividad(e.target.value)}>
-        <option value="">Seleccione un nivel</option>
-        <option value="bajo">Bajo</option>
-        <option value="medio">Medio</option>
-        <option value="alto">Alto</option>
-      </select><br />
+            {/* SECCIÓN PERSONAL */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-gray-900 mb-4 font-medium">Información Personal</h3>
 
-      <label>Lugar de Entrenamiento:</label><br />
-      <select value={lugarEntrenamiento} onChange={(e) => setLugarEntrenamiento(e.target.value)}>
-        <option value="">Seleccione un lugar</option>
-        <option value="casa">En Casa</option>
-        <option value="gimnasio">Gimnasio</option>
-        <option value="aire_libre">Aire Libre</option>
-      </select><br />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-gray-800 mb-1">Edad:</label>
+                  <input
+                    type="number"
+                    value={edad}
+                    onChange={(e) => setEdad(e.target.value)}
+                    className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                  />
+                </div>
 
-      <button onClick={cargarDatos}>Crear mi cuenta</button>
+                <div>
+                  <label className="block text-gray-800 mb-1">Peso (kg):</label>
+                  <input
+                    type="number"
+                    value={peso}
+                    onChange={(e) => setPeso(e.target.value)}
+                    className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-800 mb-1">Altura (cm):</label>
+                  <input
+                    type="number"
+                    value={altura}
+                    onChange={(e) => setAltura(e.target.value)}
+                    className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SELECTS */}
+            <div>
+              <label className="block text-gray-800 mb-1">Nivel de Actividad:</label>
+              <select
+                value={nivelActividad}
+                onChange={(e) => setNivelActividad(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg bg-white focus:ring-2 focus:ring-green-600 outline-none"
+              >
+                <option value="">Seleccione un nivel</option>
+                <option value="bajo">Bajo</option>
+                <option value="medio">Medio</option>
+                <option value="alto">Alto</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-gray-800 mb-1">Lugar de Entrenamiento:</label>
+              <select
+                value={lugarEntrenamiento}
+                onChange={(e) => setLugarEntrenamiento(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg bg-white focus:ring-2 focus:ring-green-600 outline-none"
+              >
+                <option value="">Seleccione un lugar</option>
+                <option value="casa">En Casa</option>
+                <option value="gimnasio">Gimnasio</option>
+                <option value="aire_libre">Aire Libre</option>
+              </select>
+            </div>
+
+            {/* BOTÓN */}
+            <button
+              onClick={cargarDatos}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition"
+            >
+              Crear mi cuenta
+            </button>
+
+          </div>
+        </div>
+
+      </div>
     </div>
-  )
+  );
 }
 
-export default FormRegistro
+export default FormRegistro;

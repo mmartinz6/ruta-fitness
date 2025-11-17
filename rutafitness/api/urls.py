@@ -2,11 +2,16 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+
     # === PERFIL USUARIO ===
     path('usuarios/', views.UsuariosListCreateView.as_view(), name='usuarios-list-create'),
     path('usuarios/<int:pk>/', views.UsuariosDetailView.as_view(), name='usuarios-detail'),
 
     path('usuariosD/', views.UserDListCreateView.as_view(), name='usuariosd-list-create'),
+    path('usergroup/', views.UserGroupView.as_view(), name='usergroup-listar-crear'),
+
+    # === TOKEN ===
+    path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
 
     # === CATEGORÍA ===
     path('categorias/', views.CategoriaListCreateView.as_view(), name='categoria-list-create'),
