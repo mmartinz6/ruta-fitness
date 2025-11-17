@@ -1,11 +1,10 @@
-import React from 'react';
-import FormLogin from '../components/loginUsuario/FormLogin'; // Importa el componente visual
+import React from 'react'
+import CompLoging from '../components/loginUsuario/FormLogin.jsx'
 
-
- 
-function LoginPage(props) {
-    // La Page solo actúa como un puente, pasando todas las props al componente visual
-    return <FormLogin {...props} />;
+function FormLogin() {
+  return (
+    <div><CompLoging /></div>
+  )
 }
 
-export default LoginPage;
+export default FormLogin
