@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+import React from 'react'
+
+import '../navbar/Navbar.css'
+
+function Navbar() {
+  return (
+    <div>Navbar</div>
+  )
+}
+
+export default Navbar
+=======
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { Activity, Menu, X } from 'lucide-react';
@@ -101,3 +114,4 @@ function Navbar() {
 }
 
 export default Navbar;
+>>>>>>> e9613ade3e485c026ae572bb08038a9a0117732c
