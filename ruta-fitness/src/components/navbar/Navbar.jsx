@@ -8,7 +8,7 @@ function Navbar() {
   const menuItems = [
     { id: '/inicio', label: 'Inicio' },
    /*  { id: '/wellness', label: 'Bienestar' }, */
-    /* { id: '/community', label: 'Comunidad' }, */
+    { id: '/comunidad', label: 'Comunidad' },
     { id: '/contacto', label: 'Contacto' },
   ];
 
