@@ -23,7 +23,6 @@ function Routing() {
         <Route path='/registro' element={<Registro />} />
         <Route path='/login' element={<FormLoginContainer />} />
           <Route path='/inicio' element={<Inicio />} />
-          <Route path='/login' element={<Login />} />
           <Route path='/comunidad' element={<Comunidad />} />
           <Route path='/contacto' element={<Contacto />} />
 
