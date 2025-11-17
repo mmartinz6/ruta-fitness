@@ -35,7 +35,7 @@ function FormLogin() {
   return (
     <div className="min-h-screen bg-green-50 flex items-center justify-center px-4">
       <div className="bg-white shadow-lg border border-gray-200 rounded-2xl p-8 w-full max-w-md">
-        
+
         <h1 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
           Iniciar Sesión
         </h1>
@@ -47,7 +47,7 @@ function FormLogin() {
           type="text"
           value={identificador}
           onChange={(e) => setIdentificador(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4
                      focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
         />
 
@@ -58,13 +58,13 @@ function FormLogin() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6 
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6
                      focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
         />
 
         <button
           onClick={manejarLogin}
-          className="w-full bg-green-600 text-white py-3 rounded-lg 
+          className="w-full bg-green-600 text-white py-3 rounded-lg
                      hover:bg-green-700 transition font-medium"
         >
           Ingresar
