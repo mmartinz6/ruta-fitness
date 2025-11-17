@@ -28,7 +28,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
 
 
 REST_FRAMEWORK = {
@@ -59,8 +61,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',     # 🔹 PRIMERO
-    'django.middleware.common.CommonMiddleware', # 🔹 SEGUNDO
+    'corsheaders.middleware.CorsMiddleware',     # PRIMERO
+    'django.middleware.common.CommonMiddleware', # SEGUNDO
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

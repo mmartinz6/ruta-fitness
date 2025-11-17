@@ -2,8 +2,11 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import *
 from django.contrib.auth.hashers import make_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+
+UserGroup = User.groups.through
 
 
 # PERFIL Y AUTENTICACIÓN
@@ -36,6 +39,15 @@ class UsuariosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuarios
         fields = '__all__'
+
+class UserGroupSerializers(serializers.ModelSerializer):
+    class Meta:
+        model=UserGroup
+        fields = '__all__'     
+    def validate(self, data):
+        if UserGroup.objects.filter(user_id=data['user'], group_id=data['group']).exists():
+            raise serializers.ValidationError("Ya tiene ese grupo asignado.")
+        return data
 
 
 # RUTINAS Y EJERCICIOS
@@ -187,3 +199,27 @@ class BienestarContenidoSerializer(serializers.ModelSerializer):
         model = BienestarContenido
         fields = '__all__'
         read_only_fields = ('autor', 'fecha_publicacion')
+
+#TOKEN
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        username_or_email = attrs.get("username")
+        password = attrs.get("password")
+
+        # Buscar usuario por username o email
+        user = User.objects.filter(username=username_or_email).first() or \
+               User.objects.filter(email=username_or_email).first()
+
+        if user and user.check_password(password):
+            attrs["username"] = user.username
+            data = super().validate(attrs)
+
+            # Agregar info extra
+            groups = user.groups.values_list('name', flat=True)
+            data['role'] = groups[0] if groups else None
+            data['id'] = user.id
+            return data
+
+        raise serializers.ValidationError("Usuario o contraseña incorrectos")
+
