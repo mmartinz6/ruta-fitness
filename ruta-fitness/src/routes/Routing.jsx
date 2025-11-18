@@ -6,10 +6,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import DashboardPage from '../pages/DashboardPage';
 import Registro from '../pages/Registro'; 
-import FormLoginContainer from '../pages/FormLogin';
+import Login from '../pages/Login';
 import BienestarPage from "./../pages/Bienestar";
 import Inicio from "../pages/Inicio";
-import Login from "../pages/Login";
 import Comunidad from "../pages/Comunidad";
 import Contacto from "../pages/Contacto";
 
@@ -20,11 +19,11 @@ function Routing() {
     <BrowserRouter>
       <Routes>
         {/* Rutas Públicas */}
+        <Route path='/inicio' element={<Inicio />} />
         <Route path='/registro' element={<Registro />} />
-        <Route path='/login' element={<FormLoginContainer />} />
-          <Route path='/inicio' element={<Inicio />} />
-          <Route path='/comunidad' element={<Comunidad />} />
-          <Route path='/contacto' element={<Contacto />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/comunidad' element={<Comunidad />} />
+        <Route path='/contacto' element={<Contacto />} />
 
         {/* Ruta del Dashboard */}
         <Route path='/dashboard' element={<DashboardPage />} />
