@@ -28,9 +28,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-CORS_ALLOWED_ORIGINS=[
-            'http://localhost:5174'
-        ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -60,14 +61,14 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',     # PRIMERO
+    'django.middleware.common.CommonMiddleware', # SEGUNDO
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'rutafitness.urls'
@@ -98,7 +99,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'rutafitness', 
         'USER': 'root',
-        'PASSWORD': 'root',
+        'PASSWORD': '1234',
         'HOST': '127.0.0.1',
         'PORT': 3306
     }

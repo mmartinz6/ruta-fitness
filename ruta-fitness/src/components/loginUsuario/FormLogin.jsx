@@ -1,52 +1,78 @@
-import React from 'react';
-import './FormLogin.css' // Asumo que este archivo existe y tiene los estilos
+import React, { useState } from 'react';
+import '../loginUsuario/FormLogin.css';
+import login from '../../services/servicesLogin';
 
-// Este componente solo se encarga de mostrar la interfaz
-function FormLogin({ username, password, setUsername, setPassword, onSubmit, error, loading, onNavigate }) {
-    return (
-        <div className="login-container">
-            <div className="login-card">
-                <h2 className="login-title">Iniciar Sesión</h2>
-                {/* El formulario llama a la función onSubmit que viene del contenedor (LoginPage) */}
-                <form onSubmit={onSubmit} className="login-form">
-                    <div className="form-group">
-                        <label className="form-label">Usuario:</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Contraseña:</label>
-                        <input
-                            type="password"
-                            className="form-input"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    {/* Muestra errores de la API */}
-                    {error && <div className="error-message">{error}</div>}
-                    <button type="submit" className="submit-button" disabled={loading}>
-                        {loading ? 'Cargando...' : 'Acceder'}
-                    </button>
-                </form>
+function FormLogin() {
+  const [identificador, setIdentificador] = useState(''); //correo o username
+  const [password, setPassword] = useState('');
 
-                <p className="register-text">
-                    ¿No tienes cuenta?
-                    {/* Botón para navegar a la página de registro */}
-                    <button onClick={() => onNavigate("Registro")} className="navigate-button">
-                        Regístrate aquí
-                    </button>
-                </p>
-            </div>
-        </div>
-    );
+  async function manejarLogin() {
+    try {
+      const datos = await login.loginUsuario({
+        username: identificador, // backend acepta el correo o username
+        password: password,
+      });
+
+      console.log("Login exitoso:", datos);
+
+      // Guardar tokens y datos del usuario en localStorage
+      localStorage.setItem("access", datos.access);
+      localStorage.setItem("refresh", datos.refresh);
+      if (datos.role) localStorage.setItem("role", datos.role);
+      if (datos.id) localStorage.setItem("userId", datos.id);
+
+      alert("Inicio de sesión exitoso");
+
+      // Opcional: redireccionar a la página principal
+      // window.location.href = "/dashboard";
+
+    } catch (error) {
+      console.error("Error en login:", error);
+      alert("Error: usuario o contraseña incorrectos");
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-green-50 flex items-center justify-center px-4">
+      <div className="bg-white shadow-lg border border-gray-200 rounded-2xl p-8 w-full max-w-md">
+
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+          Iniciar Sesión
+        </h1>
+
+        <label className="block text-gray-700 text-sm font-medium mb-1">
+          Usuario o Correo:
+        </label>
+        <input
+          type="text"
+          value={identificador}
+          onChange={(e) => setIdentificador(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4
+                     focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+        />
+
+        <label className="block text-gray-700 text-sm font-medium mb-1">
+          Contraseña:
+        </label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6
+                     focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+        />
+
+        <button
+          onClick={manejarLogin}
+          className="w-full bg-green-600 text-white py-3 rounded-lg
+                     hover:bg-green-700 transition font-medium"
+        >
+          Ingresar
+        </button>
+
+      </div>
+    </div>
+  );
 }
-
 
 export default FormLogin;

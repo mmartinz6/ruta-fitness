@@ -6,8 +6,15 @@ from .models import *
 from .serializers import *
 from .ia_functions import comparar_progresos_opencv
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly 
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 User = get_user_model() 
+UserGroup = User.groups.through
+
+class UserGroupView(ListCreateAPIView):
+    queryset = UserGroup.objects.all()
+    serializer_class = UserGroupSerializers
+
 
 #  Función de utilidad temporal para asignar el usuario 
 def get_temp_user():
@@ -276,3 +283,7 @@ class MensajeChatDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
     queryset = MensajeChat.objects.all()
     serializer_class = MensajeChatSerializer
+
+#TOKEN
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
