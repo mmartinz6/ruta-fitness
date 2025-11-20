@@ -160,13 +160,19 @@ class ReaccionPostSerializer(serializers.ModelSerializer):
 
 class ComunidadPostSerializer(serializers.ModelSerializer):
     usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.first_name', read_only=True)
+    usuario_apellido = serializers.CharField(source='usuario.last_name', read_only=True)
+
     num_reacciones = serializers.SerializerMethodField()
     num_comentarios = serializers.SerializerMethodField()
 
     class Meta:
         model = ComunidadPost
-        fields = ('id', 'usuario', 'usuario_username', 'contenido', 'imagen_url', 
-                  'fecha_publicacion', 'num_reacciones', 'num_comentarios')
+        fields = (
+            'id', 'usuario', 'usuario_username', 'usuario_nombre', 'usuario_apellido',
+            'contenido', 'imagen_url', 'fecha_publicacion',
+            'num_reacciones', 'num_comentarios'
+        )
         read_only_fields = ('usuario', 'fecha_publicacion')
 
     def get_num_reacciones(self, obj):

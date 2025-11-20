@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import '../loginUsuario/FormLogin.css';
 import login from '../../services/servicesLogin';
 
 function FormLogin() {
-  const [identificador, setIdentificador] = useState(''); //correo o username
+  const [identificador, setIdentificador] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   async function manejarLogin() {
     try {
       const datos = await login.loginUsuario({
-        username: identificador, // backend acepta el correo o username
+        username: identificador,
         password: password,
       });
 
       console.log("Login exitoso:", datos);
 
-      // Guardar tokens y datos del usuario en localStorage
+      // Guardar tokens y datos del usuario
       localStorage.setItem("access", datos.access);
       localStorage.setItem("refresh", datos.refresh);
       if (datos.role) localStorage.setItem("role", datos.role);
@@ -23,15 +25,21 @@ function FormLogin() {
 
       alert("Inicio de sesión exitoso");
 
-      // Opcional: redireccionar a la página principal
-      // window.location.href = "/dashboard";
+      //marca que el usuario está logueado
+      localStorage.setItem("auth", "true");
+
+      // redirige a la comunidad ****
+      navigate("/comunidad");
+
+      // recarga para que navbar + permisos se actualicen
+      window.location.reload();
 
     } catch (error) {
       console.error("Error en login:", error);
       alert("Error: usuario o contraseña incorrectos");
     }
   }
-
+  
   return (
     <div className="min-h-screen bg-green-50 flex items-center justify-center px-4">
       <div className="bg-white shadow-lg border border-gray-200 rounded-2xl p-8 w-full max-w-md">
@@ -43,6 +51,7 @@ function FormLogin() {
         <label className="block text-gray-700 text-sm font-medium mb-1">
           Usuario o Correo:
         </label>
+
         <input
           type="text"
           value={identificador}
@@ -54,6 +63,7 @@ function FormLogin() {
         <label className="block text-gray-700 text-sm font-medium mb-1">
           Contraseña:
         </label>
+
         <input
           type="password"
           value={password}

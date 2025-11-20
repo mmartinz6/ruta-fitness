@@ -10,3 +10,7 @@ const BienestarPage = () => {
 };
 
 export default BienestarPage;
+
+
+
+
