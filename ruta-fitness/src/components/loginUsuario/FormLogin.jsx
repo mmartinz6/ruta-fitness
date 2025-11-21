@@ -80,6 +80,15 @@ function FormLogin() {
           Ingresar
         </button>
 
+        <div className="mt-4 text-center">
+          <span className="text-gray-700">¿No tienes cuenta? </span>
+          <button
+          onClick={() => navigate("/registro")} // Ajusta la ruta de registro según tu proyecto
+          className="text-green-600 font-medium hover:underline"
+          >
+            Regístrate aquí
+            </button>
+        </div>
       </div>
     </div>
   );

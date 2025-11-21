@@ -142,11 +142,15 @@ class MensajeChatSerializer(serializers.ModelSerializer):
 
 class ComentarioPostSerializer(serializers.ModelSerializer):
     usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+    respuestas = serializers.SerializerMethodField()
 
     class Meta:
         model = ComentarioPost
         fields = '__all__'
         read_only_fields = ('usuario', 'post', 'fecha_publicacion')
+
+    def get_respuestas(self, obj):
+        return ComentarioPostSerializer(obj.respuestas.all(), many=True).data
 
 
 class ReaccionPostSerializer(serializers.ModelSerializer):

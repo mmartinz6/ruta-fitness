@@ -7,10 +7,11 @@ async function loginUsuario(credenciales) {
       },
       body: JSON.stringify(credenciales),
     });
-    
+
     if (!response.ok) {
       throw new Error("Credenciales incorrectas");
     }
+
     const data = await response.json();
 
     return data; // devuelve { access, refresh }

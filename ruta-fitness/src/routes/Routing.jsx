@@ -21,7 +21,7 @@ const ConfiguracionPage = () => <div className="p-8 text-2xl font-bold text-gray
 
 function Routing() {
   return (
-    <BrowserRouter>y
+    <BrowserRouter>
       <Routes>
         
         {/* 1. RUTAS SIN LAYOUT (Login y Registro) */}

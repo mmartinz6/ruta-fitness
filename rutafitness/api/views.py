@@ -257,8 +257,15 @@ class ComentarioPostListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         user = get_authenticated_user(self.request)
-        serializer.save(usuario=user)
 
+        post_id = self.request.data.get("post")
+        respuesta_id = self.request.data.get("respuesta_a")
+
+        serializer.save(
+            usuario=user,
+            post_id=post_id,
+            respuesta_a_id=respuesta_id
+        )
 
 class ComentarioPostDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
