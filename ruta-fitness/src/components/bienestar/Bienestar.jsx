@@ -1,141 +1,153 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Home, Dumbbell, Activity, Settings, LogOut, X, Users, Heart, Mail, Menu,
-    Video, BookOpen, Clock, Loader, ExternalLink, Zap, RefreshCcw, AlertTriangle 
+    Heart, Video, BookOpen, Clock, Loader, ExternalLink, Zap, RefreshCcw, AlertTriangle 
 } from 'lucide-react';
 
 // =================================================================
-// 0. CONFIGURACIÓN GLOBAL Y DEFINICIONES DE RUTA
+// 0. CONFIGURACIÓN GLOBAL Y CONSTANTES
 // =================================================================
 
-// NOTA: La clave API se deja vacía para que el entorno la inyecte.
-const apiKey = "AIzaSyDuFY1kWvYRFNYlT2V7qQEkROJiEMpWov8"; 
-// URL de la API de Gemini (asegúrate de que la API key se inyecte en el entorno real)
-const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+// La clave se deja vacía. El entorno la inyectará automáticamente en el fetch.
+const apiKey = "AIzaSyDgcDuRP4BLucS9eXfBSXqQ3cELc0oOfi0"; 
+// Usamos el modelo y la URL base para generateContent.
+const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; 
 
-// Definición de las rutas de navegación (GLOBALMENTE ACCESIBLE)
-const navItems = [
-    { name: 'Inicio', icon: Home, route: '/dashboard' },
-    { name: 'Rutinas', icon: Dumbbell, route: '/rutinas' },
-    { name: 'Progreso', icon: Activity, route: '/progreso' },
-    { name: 'Comunidad', icon: Users, route: '/comunidad' },
-    { name: 'Bienestar', icon: Heart, route: '/bienestar' }, // <-- RUTA DE BIENESTAR
-    { name: 'Contactos', icon: Mail, route: '/contactos' },
-];
+// Clave para almacenar la revista en el navegador (para evitar recargas al navegar)
+const HEALTH_CONTENT_CACHE_KEY = 'health_magazine_content';
 
-// Componentes Placeholder para las páginas estáticas
-const DashboardPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Inicio (Dashboard)</div>;
-const RutinasPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Rutinas</div>;
-const ProgresoPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Progreso</div>;
-const ComunidadPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Comunidad</div>;
-const ContactosPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Contactos</div>;
-const ConfiguracionPage = () => <div className="p-8 text-center text-2xl font-bold text-gray-700">Página de Ajustes</div>;
-
+// Estado inicial de contenido de reserva (fallback)
+const initialContent = {
+    featuredTopic: { 
+        title: "Bienvenido a Bienestar", 
+        content: "Para cargar la revista por primera vez, haz clic en el botón 'Cargar Contenido Fresco' en la parte superior. Si la carga falla, el navegador puede estar experimentando problemas de rendimiento." 
+    },
+    articles: [],
+    videos: []
+};
 
 // =================================================================
-// 1. COMPONENTE DE NAVEGACIÓN (Sidebar)
+// 1. COMPONENTE: MANEJO DE MINIATURAS DE YOUTUBE (ROBUSTO)
 // =================================================================
 
-function Navigation({ isOpen, toggleSidebar, navigate, currentPage, onLogout }) {
+/**
+ * Componente robusto para cargar miniaturas de YouTube con doble fallback.
+ * Esto previene errores de miniaturas que no existen (código 404).
+ */
+const YoutubeThumbnailErrorBoundary = ({ link, title }) => {
     
-    const settingsRoute = '/configuracion'; 
+    // Función de extracción de ID 
+    const getYouTubeId = (url) => {
+        try {
+            // Manejo de enlaces cortos (youtu.be) y enlaces largos (youtube.com/watch?v=)
+            const u = new URL(url); 
+            if (u.hostname.includes("youtu.be")) return u.pathname.substring(1);
+            // Verifica el parámetro 'v' en enlaces de youtube.com
+            if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+            return null;
+        } catch {
+            return null; // Enlace no válido
+        }
+    };
     
-    const linkClasses = (route) => {
-        const isActive = currentPage === route || (currentPage === '/' && route === '/dashboard');
-        return `flex items-center p-3 rounded-xl transition-colors duration-200 group ${
-            isActive
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/50'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-        }`;
+    const id = getYouTubeId(link);
+    // Estado para la fuente actual de la imagen (intenta con maxresdefault primero)
+    const [currentSrc, setCurrentSrc] = useState(null);
+    const [isInvalid, setIsInvalid] = useState(!id); 
+
+    useEffect(() => {
+        // Al cambiar el link (o al montar), reseteamos y calculamos la URL de la miniatura.
+        if (id) {
+            // Intenta cargar la miniatura de alta resolución (maxresdefault)
+            setCurrentSrc(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`);
+            setIsInvalid(false);
+        } else {
+            setIsInvalid(true);
+        }
+    }, [id, link]); // Depende del ID y del link
+
+    // Maneja el error de imagen: si falla maxresdefault, intenta con hqdefault.
+    const handleImageError = (e) => {
+        if (currentSrc && currentSrc.includes('maxresdefault.jpg') && id) {
+            // Intenta la versión segura hqdefault como segundo intento
+            e.target.onerror = null; // Evita bucle infinito de error
+            setCurrentSrc(`https://img.youtube.com/vi/${id}/hqdefault.jpg`); 
+        } 
+        else {
+            // Falla hqdefault o el ID es inexistente. Muestra el error de fallback.
+            setIsInvalid(true);
+        }
     };
 
-    const handleNavigation = (route) => {
-        navigate(route);
-    };
-
+    if (isInvalid) {
+        return (
+            // CONTENEDOR AJUSTADO: Se le da un alto fijo si el enlace es inválido para evitar que el layout se rompa.
+            <div className="w-full h-36 bg-gray-200 flex items-center justify-center rounded-t-xl overflow-hidden relative">
+                <p className="text-gray-600 flex items-center text-sm p-4 text-center">
+                    <AlertTriangle className="w-4 h-4 mr-1"/> Enlace de Video Inválido o Eliminado
+                </p>
+            </div>
+        );
+    }
+    
     return (
-        <>
-            {/* Overlay para móvil */}
-            <div
-                className={`fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden ${
-                    isOpen ? 'block' : 'hidden'
-                }`}
-                onClick={toggleSidebar}
-            ></div>
-
-            {/* Sidebar real */}
-            <div
-                className={`flex flex-col h-screen bg-gray-800 w-64 space-y-6 py-7 px-4 fixed inset-y-0 left-0 transform transition duration-300 ease-in-out z-40 lg:relative lg:translate-x-0 ${
-                    isOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}
-            >
-                {/* Logo / Título */}
-                <div className="flex items-center justify-between px-3 mb-6">
-                    <h1 className="text-2xl font-extrabold text-white tracking-wider">
-                        Ruta<span className="text-indigo-500">Fitness</span>
-                    </h1>
-                    <button className="lg:hidden text-gray-300 hover:text-white" onClick={toggleSidebar}>
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-
-                {/* Enlaces de Navegación PRINCIPAL */}
-                <nav className="flex-1 space-y-2">
-                    {navItems.map((item) => (
-                        <button
-                            key={item.name}
-                            onClick={() => handleNavigation(item.route)}
-                            className={linkClasses(item.route)}
-                        >
-                            <item.icon className="w-5 h-5 mr-3" />
-                            <span className="font-semibold">{item.name}</span>
-                        </button>
-                    ))}
-                </nav>
-
-                {/* Sección Inferior: Ajustes y Cerrar Sesión */}
-                <div className="mt-auto space-y-2 border-t border-gray-700 pt-4">
-                    <button 
-                        onClick={() => handleNavigation(settingsRoute)} 
-                        className={linkClasses(settingsRoute)}
-                    >
-                        <Settings className="w-5 h-5 mr-3" />
-                        <span className="font-semibold">Ajustes</span>
-                    </button>
-
-                    <button 
-                        onClick={onLogout} 
-                        className="flex items-center p-3 rounded-xl transition-colors duration-200 text-red-400 hover:bg-gray-700 hover:text-red-300 w-full"
-                    >
-                        <LogOut className="w-5 h-5 mr-3" />
-                        <span className="font-semibold">Cerrar Sesión</span>
-                    </button>
+        <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            // Se usa el padding 16:9, pero en un contenedor definido.
+            className="block relative pt-[56.25%] overflow-hidden rounded-t-xl group transition duration-300 transform hover:shadow-2xl"
+        >
+            <img
+                src={currentSrc}
+                onError={handleImageError} 
+                alt={`Miniatura del video: ${title}`}
+                // key asegura que React re-renderice y reintente cargar si currentSrc cambia
+                key={currentSrc} 
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                <div className="p-4 bg-red-600 rounded-full text-white shadow-2xl transition-transform duration-300 group-hover:scale-110">
+                    <Video className="w-7 h-7" />
                 </div>
             </div>
-        </>
+        </a>
     );
-}
+};
+
 
 // =================================================================
-// 2. LÓGICA DE LA API Y PÁGINA DE BIENESTAR
+// 2. LÓGICA DE LA API (Función fetchFreshContentFromApi)
 // =================================================================
 
-const fetchHealthContent = async () => {
-    // NOTA: Para que esto funcione, la constante 'apiKey' debe tener tu clave API real.
-    // Si se ejecuta en un entorno de desarrollo sin la clave, fallará.
-
-    const systemPrompt = 
-        "Eres un editor experto en salud y bienestar. Analiza Google Search para encontrar temas de tendencia, y crea contenido estructurado. Los enlaces deben ser URLs reales que encuentres. Devuelve **solamente** el bloque de código JSON, sin ningún texto adicional. El formato debe ser un JSON plano, sin saltos de línea adicionales fuera de los strings.";
+/**
+ * Llama a la API de Gemini para generar contenido nuevo y fresco.
+ */
+const fetchFreshContentFromApi = async () => {
     
-    // Estructura JSON de referencia para el modelo
+    const systemPrompt = 
+        "Eres un editor experto en salud y bienestar. Analiza Google Search para encontrar temas de tendencia, y crea contenido estructurado. Los enlaces deben ser URLs reales que encuentres. **ES CRUCIAL QUE TODAS LAS URLs de video sean enlaces funcionales de YouTube** (e.g., 'https://www.youtube.com/watch?v=XXXX'). Devuelve **solamente** el bloque de código JSON, sin ningún texto adicional.";
+    
+    // Referencia del formato JSON requerido
+    // Mantenemos 2 artículos y 2 vídeos para reducir el riesgo de cuelgue.
     const jsonFormatReference = JSON.stringify({
-        featuredTopic: { title: "Título del Artículo", content: "Contenido detallado con **Markdown** (mínimo 3 párrafos)." },
-        articles: [{ title: "Título 1", summary: "Resumen breve", link: "URL real" }, { title: "Título 2", summary: "Resumen breve", link: "URL real" }, { title: "Título 3", summary: "Resumen breve", link: "URL real" }],
-        videos: [{ title: "Título 1", channel: "Nombre del Canal", link: "URL real de YouTube" }, { title: "Título 2", channel: "Nombre del Canal", link: "URL real de YouTube" }, { title: "Título 3", channel: "Nombre del Canal", link: "URL real de YouTube" }]
+        featuredTopic: { 
+            title: "Título del Artículo", 
+            content: "Contenido detallado con **Markdown** (mínimo 3 párrafos). Utiliza **negrita** para énfasis." 
+        },
+        articles: [
+            { title: "Título 1", summary: "Resumen breve", link: "URL real" }, 
+            { title: "Título 2", summary: "Resumen breve", link: "URL real" }, 
+        ],
+        videos: [
+            { title: "Título 1", channel: "Nombre del Canal", link: "URL real y FUNCIONAL de YouTube (formato largo)" }, 
+            { title: "Título 2", channel: "Nombre del Canal", link: "URL real y FUNCIONAL de YouTube (formato largo)" }, 
+        ]
     }, null, 2);
 
     const userPrompt = 
-        `Encuentra el tema de bienestar más relevante. Genera un artículo principal y tres artículos y videos de apoyo.
+        `Encuentra el tema de bienestar más relevante. Genera un artículo principal, dos artículos y dos videos de apoyo.
+
+        **REQUISITO DE VIDEO:** Asegúrate de que las URLs de video sean **SIEMPRE enlaces completos de YouTube (NO enlaces cortos ni listas de reproducción).** La miniatura y el video deben existir.
 
         **FORMATO DE SALIDA REQUERIDO:**
         Debes devolver el resultado como un **bloque de código JSON** que siga esta estructura:
@@ -145,7 +157,7 @@ const fetchHealthContent = async () => {
 
     const payload = {
         contents: [{ parts: [{ text: userPrompt }] }],
-        tools: [{ google_search: {} }], 
+        tools: [{ google_search: {} }], // Usar Google Search para obtener información actualizada
         systemInstruction: { parts: [{ text: systemPrompt }] },
     };
     
@@ -154,12 +166,6 @@ const fetchHealthContent = async () => {
 
     for (let i = 0; i < maxRetries; i++) {
         try {
-            // Verificar si hay clave API antes de hacer la llamada
-            if (!apiKey) {
-                // Simulación para evitar error de Fetch si la clave API está vacía
-                throw new Error("Clave API vacía. Por favor, inyecta la clave API.");
-            }
-            
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -167,161 +173,148 @@ const fetchHealthContent = async () => {
             });
 
             if (!response.ok) {
+                // Lanza error para entrar en el catch y reintentar.
                 throw new Error(`HTTP Error: ${response.status} - No se pudo conectar con Gemini.`);
             }
 
             const result = await response.json();
             const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!jsonText) throw new Error("No content found in API response.");
+            if (!jsonText) throw new Error("No se encontró contenido en la respuesta de la API.");
 
-            // Extrae el JSON dentro del bloque de código ```json...```
+            // Extrae el bloque de código JSON
             const match = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
             let cleanJsonText = match ? match[1].trim() : jsonText.trim();
             
-            if (!match && !cleanJsonText.startsWith('{')) {
+            // Verificación básica de que parece JSON
+            if (!cleanJsonText.startsWith('{') && !cleanJsonText.startsWith('[')) {
                 throw new Error("El modelo no devolvió un bloque de código JSON válido.");
             }
 
             return JSON.parse(cleanJsonText);
 
         } catch (error) {
-            console.error(`Gemini error (Intento ${i + 1}):`, error);
+            console.error(`Error de Gemini (Intento ${i + 1}):`, error);
             if (i < maxRetries - 1) {
+                // Backoff exponencial antes de reintentar
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 2; 
             } else {
-                return null;
+                return null; // Falla después del último reintento
             }
         }
     }
     return null; 
 };
 
-const BienestarPage = () => {
-    const [content, setContent] = useState(null);
-    const [loading, setLoading] = useState(true);
+
+
+
+export default function App() {
+    // Usar initialContent para que la página muestre algo si no hay caché
+    const [content, setContent] = useState(initialContent); 
+    const [loading, setLoading] = useState(false); 
     const [error, setError] = useState(false);
 
-    const loadContent = async () => {
-        setLoading(true);
-        setError(false);
-        const data = await fetchHealthContent();
-        if (!data) {
-            setError(true);
-        } else {
-            setContent(data);
+    /**
+     * Carga el contenido de bienestar: primero desde el caché, o fresco si se fuerza.
+     * @param {boolean} forceRefresh - Si es true, omite el caché y va directo a la API.
+     */
+    const initializeContent = async (forceRefresh = false) => {
+        
+        // 1. INTENTAR CARGAR DESDE CACHÉ si NO se fuerza la actualización
+        const cachedContent = localStorage.getItem(HEALTH_CONTENT_CACHE_KEY);
+
+        if (cachedContent && !forceRefresh) {
+            try {
+                const parsedContent = JSON.parse(cachedContent);
+                console.log("Contenido cargado desde caché local.");
+                // Establecer contenido y terminar la carga
+                setContent(parsedContent);
+                setLoading(false);
+                return; // IMPORTANTE: Sale de la función, NO llama a la API.
+            } catch (e) {
+                console.error("Error al analizar el contenido de caché. Obteniendo contenido fresco si es forzado.", e);
+            }
         }
-        setLoading(false);
+
+        // Si se fuerza la recarga O el caché es inválido/no existe, llamamos a la API.
+        if (forceRefresh || !cachedContent || content.featuredTopic.title === initialContent.featuredTopic.title) {
+            setLoading(true);
+            setError(false);
+            
+            // 2. OBTENER CONTENIDO FRESCO DESDE LA API
+            await new Promise(resolve => setTimeout(resolve, 500)); // Retardo UX
+            const data = await fetchFreshContentFromApi();
+            
+            if (!data || !data.featuredTopic || !data.featuredTopic.title) {
+                // Si la API falla, intentamos usar el fallback inicial y mostrar un error
+                setContent(initialContent);
+                setError(true);
+            } else {
+                // 3. PROCESAR Y GUARDAR EN CACHÉ
+                const safeData = {
+                    ...data,
+                    articles: data.articles || [],
+                    videos: data.videos || []
+                };
+                
+                try {
+                    localStorage.setItem(HEALTH_CONTENT_CACHE_KEY, JSON.stringify(safeData));
+                    console.log("Contenido fresco guardado en caché local.");
+                } catch (e) {
+                    console.error("No se pudo guardar en localStorage.", e);
+                }
+                setContent(safeData);
+            }
+            setLoading(false);
+        }
     };
 
+    
     useEffect(() => {
-        loadContent();
-    }, []);
-
-    const getYouTubeId = (url) => {
-        try {
-            const u = new URL(url);
-            if (u.hostname.includes("youtu.be")) return u.pathname.substring(1);
-            if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
-            return null;
-        } catch {
-            return null;
-        }
-    };
-
+        // La primera vez que se carga la página, intentamos cargar desde caché (si existe)
+        initializeContent(false); 
+    }, []); 
+    
+    // Función de renderizado de contenido simple con soporte de Markdown (negritas)
     const renderContent = (text) => {
         if (!text) return null;
-        // Simple render de Markdown (negritas y párrafos)
+        // Divide el texto en párrafos y renderiza Markdown simple (negritas)
         return text.split('\n\n').map((paragraph, index) => {
             let htmlContent = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Reemplazar saltos de línea simples por <br/> (opcional)
+            htmlContent = htmlContent.replace(/\n/g, '<br/>');
             return (
-                <p key={index} className="mb-4" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                // Aplica break-words al párrafo para forzar el ajuste
+                <p key={index} className="mb-4 break-words" dangerouslySetInnerHTML={{ __html: htmlContent }} />
             );
         });
     };
 
-    const renderVideoEmbed = (link, title) => {
-        const id = getYouTubeId(link);
-        // Usa una imagen de baja resolución como fallback por defecto
-        let imageUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`; 
-        
-        if (id) {
-            // Intenta usar la imagen de alta resolución
-            imageUrl = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
-        }
 
-        if (!id) {
-            return (
-                <div className="relative pt-[56.25%] bg-gray-200 flex items-center justify-center rounded-t-xl">
-                    <p className="text-gray-600 flex items-center text-sm">
-                        <AlertTriangle className="w-4 h-4 mr-1"/> Enlace Inválido
-                    </p>
-                </div>
-            );
-        }
-
-        return (
-            <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block relative pt-[56.25%] overflow-hidden rounded-t-xl group transition duration-300 transform hover:shadow-2xl"
-            >
-                <img
-                    src={imageUrl}
-                    onError={(e) => { 
-                        e.target.onerror = null; 
-                        e.target.src = `https://placehold.co/1280x720/E5E7EB/4B5563?text=Video+Placeholder`; 
-                    }}
-                    alt={`Miniatura del video: ${title}`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                    <div className="p-4 bg-red-600 rounded-full text-white shadow-2xl transition-transform duration-300 group-hover:scale-110">
-                        <Video className="w-7 h-7" />
-                    </div>
-                </div>
-            </a>
-        );
-    };
-
-
+    // La pantalla de carga se muestra SOLO si loading es true (i.e., estamos llamando a la API)
     if (loading) {
         return (
-            <div className="min-h-full flex items-center justify-center bg-gray-50 p-6 rounded-xl">
+            <div className="min-h-[500px] flex items-center justify-center bg-gray-50 p-6 rounded-xl">
                 <div className="bg-white p-10 rounded-xl shadow-2xl flex flex-col items-center border-l-4 border-indigo-500 max-w-sm w-full">
                     <Loader className="w-10 h-10 animate-spin text-indigo-600" />
                     <p className="mt-4 text-lg font-medium text-gray-700 text-center">
                         Generando su revista personalizada...
                     </p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error || !content || !content.featuredTopic) {
-        return (
-            <div className="min-h-full flex items-center justify-center bg-red-50 p-6 rounded-xl">
-                <div className="bg-white p-10 rounded-xl shadow-2xl border-l-4 border-red-500 flex flex-col items-center max-w-sm w-full">
-                    <AlertTriangle className="w-10 h-10 text-red-600 mb-4" />
-                    <p className="font-bold text-xl text-red-700">Error cargando contenido.</p>
-                    <p className="text-gray-600 mt-2 text-center">
-                        No se pudo obtener la revista de bienestar.
+                    <p className="mt-2 text-xs text-gray-400 text-center">
+                        Esto puede tomar unos segundos. Por favor, espere.
                     </p>
-                    <button 
-                        onClick={loadContent} 
-                        className="mt-6 px-6 py-3 bg-red-600 text-white font-bold rounded-full shadow-md hover:bg-red-700 transition-colors flex items-center transform hover:scale-105 active:scale-95"
-                    >
-                        <RefreshCcw className="w-4 h-4 mr-2"/> Reintentar Carga
-                    </button>
                 </div>
             </div>
         );
     }
-
+    
+    // El resto del componente usa 'content' de forma segura.
+    
     return (
-        <div className="w-full bg-gray-50">
-            <div className="max-w-7xl mx-auto">
+        <div className="w-full bg-gray-50 min-h-screen font-sans p-4 sm:p-6 lg:p-8">
+            {/* Contenedor principal para evitar desbordamiento horizontal */}
+            <div className="max-w-7xl mx-auto overflow-x-hidden"> 
 
                 <header className="bg-white shadow-xl rounded-3xl p-6 md:p-8 border-b-8 border-indigo-600 mb-10">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -329,16 +322,24 @@ const BienestarPage = () => {
                             <Heart className="w-12 h-12 text-indigo-600 p-1 bg-indigo-100 rounded-full shrink-0" />
                             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Tu Revista de Bienestar Diario</h1>
                         </div>
+                        {/* Botón de Actualizar, LLAMA a initializeContent con true para forzar la API */}
                         <button 
-                            onClick={loadContent} 
+                            onClick={() => initializeContent(true)} 
                             className="flex items-center justify-center px-4 py-2 bg-yellow-500 text-white font-bold rounded-full shadow-lg hover:bg-yellow-600 transition-all text-sm transform hover:scale-105 active:scale-95 shrink-0"
+                            disabled={loading} // Deshabilitar si ya está cargando
                         >
-                            <RefreshCcw className="w-4 h-4 mr-2" /> 
+                            <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> 
                             Cargar Contenido Fresco
                         </button>
                     </div>
-                    <p className="mt-4 text-gray-600 italic border-t pt-2 text-sm">
-                        Contenido fundamentado en Google Search.
+                    {error && (
+                        <p className="mt-4 text-red-600 font-semibold italic text-sm">
+                            <AlertTriangle className="w-4 h-4 inline mr-1"/>
+                            Error al cargar el contenido. Por favor, inténtalo de nuevo o espera unos momentos.
+                        </p>
+                    )}
+                    <p className="mt-2 text-gray-600 italic border-t pt-2 text-sm">
+                        Contenido fundamentado en Google Search. **Se carga desde el caché al navegar. Solo se actualiza con el botón.**
                     </p>
                 </header>
 
@@ -348,8 +349,9 @@ const BienestarPage = () => {
                             <Zap className="w-5 h-5 mr-1" />
                             Artículo Destacado del Día
                         </h2>
-                        <h3 className="text-2xl sm:text-3xl font-bold mb-5 text-gray-900">{content.featuredTopic.title}</h3>
+                        <h3 className="text-2xl sm:text-3xl font-bold mb-5 text-gray-900 break-words">{content.featuredTopic.title}</h3> 
                         <div className="text-gray-700 leading-relaxed space-y-4">
+                            {/* Aplicado break-words en el renderizado del párrafo */}
                             {renderContent(content.featuredTopic.content)}
                         </div>
                     </div>
@@ -357,19 +359,20 @@ const BienestarPage = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     
-                    <section>
+                    {/* Sección de Artículos: Añadido min-w-0 */}
+                    <section className="min-w-0"> 
                         <h2 className="text-2xl font-bold mb-6 border-b-2 border-indigo-200 pb-2 flex items-center text-indigo-800">
                             <BookOpen className="w-6 h-6 mr-2 text-indigo-500" />
                             Artículos Recomendados
                         </h2>
                         <div className="space-y-6">
-                            {content.articles.map((a, i) => (
+                            {(content.articles || []).map((a, i) => (
                                 <div key={i} className="bg-white rounded-xl p-5 shadow-lg hover:shadow-xl transition flex border-l-4 border-indigo-500">
-                                    <div className="flex-grow">
-                                        <h3 className="text-xl font-bold text-gray-800 mb-1">{a.title}</h3>
-                                        <p className="text-gray-600 text-sm">{a.summary}</p>
+                                    <div className="flex-grow min-w-0"> {/* Añadido min-w-0 para el crecimiento flexible */}
+                                        <h3 className="text-xl font-bold text-gray-800 mb-1 break-words">{a.title}</h3> {/* break-words */}
+                                        <p className="text-gray-600 text-sm break-words">{a.summary}</p> {/* break-words */}
                                     </div>
-                                    <div className="ml-4 flex items-center">
+                                    <div className="ml-4 flex items-center shrink-0">
                                         <a
                                             href={a.link}
                                             target="_blank"
@@ -385,26 +388,27 @@ const BienestarPage = () => {
                         </div>
                     </section>
 
-                    <section>
+                    {/* Sección de Videos: Añadido min-w-0 */}
+                    <section className="min-w-0"> 
                         <h2 className="text-2xl font-bold mb-6 border-b-2 border-red-200 pb-2 flex items-center text-red-800">
                             <Video className="w-6 h-6 mr-2 text-red-500" />
                             Videos Populares de YouTube
                         </h2>
                         <div className="space-y-6">
-                            {content.videos.map((v, i) => (
+                            {(content.videos || []).map((v, i) => (
                                 <div key={i} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition overflow-hidden border-b-4 border-red-500">
-                                    {renderVideoEmbed(v.link, v.title)}
+                                    <YoutubeThumbnailErrorBoundary link={v.link} title={v.title} /> 
                                     <div className="p-4">
-                                        <h3 className="text-lg font-bold text-gray-800 leading-snug">{v.title}</h3>
+                                        <h3 className="text-lg font-bold text-gray-800 leading-snug break-words">{v.title}</h3>
                                         <p className="text-sm text-gray-500 flex items-center mt-1">
                                             <Clock className="w-3 h-3 mr-1 text-gray-400" />
-                                            Canal: <span className="font-medium ml-1 text-red-600">{v.channel}</span>
+                                            Canal: <span className="font-medium ml-1 text-red-600 break-words">{v.channel}</span>
                                         </p>
                                         <a 
                                             href={v.link} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
-                                            className="mt-2 inline-flex items-center text-indigo-600 text-sm font-semibold hover:text-indigo-800 transition"
+                                            className="mt-2 inline-flex items-center text-indigo-600 text-sm font-semibold hover:text-indigo-800 transition break-words"
                                         >
                                             Ver Video <ExternalLink className="w-4 h-4 ml-1" />
                                         </a>
@@ -421,97 +425,4 @@ const BienestarPage = () => {
             </div>
         </div>
     );
-};
-
-
-// =================================================================
-// 3. COMPONENTE PRINCIPAL (App) - Manejo de Rutas
-// =================================================================
-
-const App = () => {
-    // Inicia en la página de Bienestar para que el usuario pueda probar de inmediato
-    const [currentPage, setCurrentPage] = useState('/bienestar'); 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Función de navegación directa
-    const navigate = (route) => {
-        setCurrentPage(route);
-        // Cierra el sidebar en móvil
-        if (isSidebarOpen) setIsSidebarOpen(false); 
-    };
-
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
-    };
-
-    const handleLogout = () => {
-        alert('Sesión cerrada (simulado)');
-    };
-
-    // Función que decide qué componente renderizar
-    const renderPage = () => {
-        switch (currentPage) {
-            case '/dashboard':
-            case '/':
-                return <DashboardPage />;
-            case '/rutinas':
-                return <RutinasPage />;
-            case '/progreso':
-                return <ProgresoPage />;
-            case '/comunidad':
-                return <ComunidadPage />;
-            case '/bienestar':
-                // RUTA CONECTADA AL COMPONENTE DE REVISTA
-                return <BienestarPage />; 
-            case '/contactos':
-                return <ContactosPage />;
-            case '/configuracion':
-                return <ConfiguracionPage />;
-            default:
-                return <DashboardPage />;
-        }
-    };
-
-    // Obtenemos el título de la página actual para el header móvil
-    const currentTitle = navItems.find(item => item.route === currentPage)?.name || 
-                        (currentPage === '/configuracion' ? 'Ajustes' : 'Inicio');
-
-    return (
-        <div className="flex min-h-screen bg-gray-100">
-             {/* NOTA: En un proyecto real de React con Vite/CRA, no se usa <script src="..."></script>
-             Para usar Tailwind, debes instalarlo vía npm y configurarlo en los archivos CSS. */}
-             {/* <script src="https://cdn.tailwindcss.com"></script> */}
-             
-            {/* 1. Navigation (Sidebar) */}
-            <Navigation
-                isOpen={isSidebarOpen}
-                toggleSidebar={toggleSidebar}
-                navigate={navigate}
-                currentPage={currentPage}
-                onLogout={handleLogout}
-            />
-
-            {/* 2. Contenido Principal */}
-            <div className="flex-1 flex flex-col overflow-x-hidden">
-                {/* Top Bar para móvil y título */}
-                <header className="bg-white shadow p-4 lg:hidden sticky top-0 z-20">
-                    <div className="flex items-center justify-between">
-                        <button onClick={toggleSidebar} className="text-gray-600 hover:text-indigo-600">
-                            <Menu className="w-6 h-6" />
-                        </button>
-                        <h2 className="text-xl font-bold text-gray-800">
-                             {currentTitle}
-                        </h2>
-                    </div>
-                </header>
-                
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                    {/* Renderiza el componente de la página activa */}
-                    {renderPage()}
-                </main>
-            </div>
-        </div>
-    );
-};
-
-export default App;
+}
