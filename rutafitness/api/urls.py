@@ -66,8 +66,7 @@ urlpatterns = [
     path('comentario-posts/<int:pk>/', views.ComentarioPostDetailView.as_view(), name='comentariopost-detail'),
 
     # === REACCIONES A POSTS ===
-    path('reaccion-posts/', views.ReaccionPostListCreateView.as_view(), name='reaccionpost-list-create'),
-    path('reaccion-posts/<int:pk>/', views.ReaccionPostDetailView.as_view(), name='reaccionpost-detail'),
+    path('posts/<int:post_id>/toggle-like/', views.ToggleLikePostView.as_view(), name='toggle-like-post'),
 
     # === CHAT (Usuario ↔ Entrenador) ===
     path('conversaciones/', views.ConversacionListCreateView.as_view(), name='conversacion-list-create'),

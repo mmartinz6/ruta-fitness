@@ -205,14 +205,30 @@ class ReaccionPost(models.Model):
 
 
 class ComentarioPost(models.Model):
-    post = models.ForeignKey(ComunidadPost, on_delete=models.CASCADE, related_name="comentarios")
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comentarios")
+    post = models.ForeignKey(
+        ComunidadPost,
+        on_delete=models.CASCADE,
+        related_name="comentarios"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="comentarios"
+    )
     contenido = models.TextField()
     fecha_publicacion = models.DateTimeField(auto_now_add=True)
 
+    #permite responder comentarios (hilo)
+    respuesta_a = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='respuestas'
+    )
+
     def __str__(self):
         return f"Comentario de {self.usuario.username} en {self.post.id}"
-
 
 #  CHAT ENTRE USUARIO Y ENTRENADOR 
 class Conversacion(models.Model):

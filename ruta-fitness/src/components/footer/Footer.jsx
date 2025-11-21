@@ -50,7 +50,7 @@ export default function Footer({ onNavigate }) {
 
         {/* Línea inferior */}
         <div className="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500 text-sm">
-          © 2025 <span className="text-white">Ruta Fitness</span>. Todos los derechos reservados.
+        <span className="text-white">Ruta Fitness</span> | 2025
         </div>
       </div>
     </footer>

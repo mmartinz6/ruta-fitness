@@ -13,6 +13,7 @@ async function loginUsuario(credenciales) {
     }
 
     const data = await response.json();
+
     return data; // devuelve { access, refresh }
   } catch (error) {
     console.error("Error en el login:", error);
