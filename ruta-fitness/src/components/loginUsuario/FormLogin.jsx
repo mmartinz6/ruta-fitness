@@ -6,9 +6,17 @@ import login from '../../services/servicesLogin';
 function FormLogin() {
   const [identificador, setIdentificador] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState(''); //Mensaje de error
   const navigate = useNavigate();
 
   async function manejarLogin() {
+
+    //VALIDACIÓN CAMPOS VACÍOS
+    if (!identificador || !password) {
+      setErrorMsg("Ingrese su usuario/correo y contraseña.");
+      return;
+    }
+
     try {
       const datos = await login.loginUsuario({
         username: identificador,
@@ -17,29 +25,22 @@ function FormLogin() {
 
       console.log("Login exitoso:", datos);
 
-      // Guardar tokens y datos del usuario
       localStorage.setItem("access", datos.access);
       localStorage.setItem("refresh", datos.refresh);
       if (datos.role) localStorage.setItem("role", datos.role);
       if (datos.id) localStorage.setItem("userId", datos.id);
 
-      alert("Inicio de sesión exitoso");
-
-      //marca que el usuario está logueado
       localStorage.setItem("auth", "true");
 
-      // redirige a la comunidad ****
-      navigate("/comunidad");
-
-      // recarga para que navbar + permisos se actualicen
+      navigate("/dashboard");
       window.location.reload();
 
     } catch (error) {
       console.error("Error en login:", error);
-      alert("Error: usuario o contraseña incorrectos");
+      setErrorMsg("Usuario o contraseña incorrectos."); //ERROR EN ROJO
     }
   }
-  
+
   return (
     <div className="min-h-screen bg-green-50 flex items-center justify-center px-4">
       <div className="bg-white shadow-lg border border-gray-200 rounded-2xl p-8 w-full max-w-md">
@@ -68,9 +69,16 @@ function FormLogin() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2
                      focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
         />
+
+        {/*MENSAJE DE ERROR EN ROJO */}
+        {errorMsg && (
+          <p className="text-red-600 text-sm mt-1 mb-3 text-center">
+            {errorMsg}
+          </p>
+        )}
 
         <button
           onClick={manejarLogin}
@@ -83,11 +91,11 @@ function FormLogin() {
         <div className="mt-4 text-center">
           <span className="text-gray-700">¿No tienes cuenta? </span>
           <button
-          onClick={() => navigate("/registro")} // Ajusta la ruta de registro según tu proyecto
-          className="text-green-600 font-medium hover:underline"
+            onClick={() => navigate("/registro")}
+            className="text-green-600 font-medium hover:underline"
           >
             Regístrate aquí
-            </button>
+          </button>
         </div>
       </div>
     </div>
