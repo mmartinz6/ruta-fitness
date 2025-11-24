@@ -252,8 +252,17 @@ class ComunidadPostDetailView(RetrieveUpdateDestroyAPIView):
 # ========= COMENTARIO POST ============
 class ComentarioPostListCreateView(ListCreateAPIView):
     permission_classes = [permissions.AllowAny]
-    queryset = ComentarioPost.objects.all()
     serializer_class = ComentarioPostSerializer
+
+    def get_queryset(self):
+        # Filtra solo comentarios raíz del post solicitado
+        post_id = self.request.query_params.get("post")
+        qs = ComentarioPost.objects.filter(respuesta_a=None)
+
+        if post_id:
+            qs = qs.filter(post_id=post_id)
+
+        return qs.order_by("-fecha_publicacion")
 
     def perform_create(self, serializer):
         user = get_authenticated_user(self.request)

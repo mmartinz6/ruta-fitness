@@ -36,7 +36,7 @@ function AppHeader({ toggleSidebar }) {
 
 // ======================= Navigation Component (Sidebar) =======================
 const navItems = [
-    { name: 'Inicio', icon: Home, route: '/inicio' },
+    { name: 'Inicio', icon: Home, route: '/inicio' }, //CAMBIAR AQUI NO DEBE IR A INICIO *******
     { name: 'Métricas', icon: BarChart2, route: '/dashboard' },
     { name: 'Rutinas', icon: Dumbbell, route: '/rutinas' },
     { name: 'Progreso', icon: Activity, route: '/progreso' },

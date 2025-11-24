@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"; 
+import React, { useEffect, useState } from "react";
 import llamadopublicaciones from "../../services/ServicesPublicaciones";
 import comentariosAPI from "../../services/ServicesComentariosPost";
 import { Heart, MessageCircle, MoreVertical } from "lucide-react";
@@ -10,10 +10,15 @@ function ListaPost() {
   const [editandoId, setEditandoId] = useState(null);
   const [contenidoEditado, setContenidoEditado] = useState("");
 
-  // === ESTADOS PARA COMENTARIOS ===
+  //ESTADOS PARA COMENTARIOS
   const [comentarioAbierto, setComentarioAbierto] = useState(null);
   const [nuevoComentario, setNuevoComentario] = useState("");
-  const [comentarios, setComentarios] = useState([]);
+  //Se guarda comentarios por post: { postId: [comentarios raíz con 'respuestas'] }
+  const [comentarios, setComentarios] = useState({});
+
+  //Para respuestas (toggle por comentario id) y texto por comentario id
+  const [respuestasAbiertas, setRespuestasAbiertas] = useState({});
+  const [textoRespuesta, setTextoRespuesta] = useState({});
 
   function htmlToText(html) {
     const div = document.createElement("div");
@@ -30,11 +35,12 @@ function ListaPost() {
     }
   }
 
+  // Cargar comentarios raíz (el serializer debe incluir 'respuestas' anidadas)
   async function cargarComentarios(postId) {
     try {
-      const data = await comentariosAPI.getComentarios();
-      const filtrados = data.filter((c) => c.post === postId);
-      setComentarios(filtrados);
+      const data = await comentariosAPI.getComentarios(postId); // espera ?post=postId
+      // data debe ser array de comentarios raíz, cada uno con campo 'respuestas' recursivo
+      setComentarios(prev => ({ ...prev, [postId]: data }));
     } catch (err) {
       console.error("Error al cargar comentarios", err);
     }
@@ -80,6 +86,7 @@ function ListaPost() {
     }
   }
 
+  // Crear comentario raíz
   async function enviarComentario(postId) {
     if (nuevoComentario.trim() === "") return;
 
@@ -87,31 +94,101 @@ function ListaPost() {
       await comentariosAPI.crearComentario({
         post: postId,
         contenido: nuevoComentario,
+        respuesta_a: null, // campo que espera el backend
       });
 
-      // Limpiar campo
       setNuevoComentario("");
+      await cargarComentarios(postId);
 
-      // Recargar comentarios del post
-      cargarComentarios(postId);
-
-      // Actualizar contador en UI
-      setPosts(
-        posts.map((p) =>
-          p.id === postId
-            ? { ...p, num_comentarios: p.num_comentarios + 1 }
-            : p
-        )
-      );
-
+      // actualizar contador local (opcional)
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, num_comentarios: (p.num_comentarios || 0) + 1 } : p));
     } catch (err) {
       console.error("Error enviando comentario:", err);
     }
   }
 
+  // Abrir/ocultar textarea de respuesta para un comentario
+  function toggleRespuesta(comentarioId) {
+    setRespuestasAbiertas(prev => ({ ...prev, [comentarioId]: !prev[comentarioId] }));
+  }
+
+  // Enviar respuesta (hilo) indicando respuesta_a
+  async function enviarRespuesta(postId, parentId) {
+    const texto = textoRespuesta[parentId];
+    if (!texto || texto.trim() === "") return;
+
+    try {
+      await comentariosAPI.crearComentario({
+        post: postId,
+        contenido: texto,
+        respuesta_a: parentId,
+      });
+
+      // Limpiar y cerrar
+      setTextoRespuesta(prev => ({ ...prev, [parentId]: "" }));
+      setRespuestasAbiertas(prev => ({ ...prev, [parentId]: false }));
+
+      // Recargar comentarios de ese post (traerá nuevas respuestas anidadas)
+      await cargarComentarios(postId);
+
+      // actualizar contador local (opcional)
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, num_comentarios: (p.num_comentarios || 0) + 1 } : p));
+    } catch (err) {
+      console.error("Error enviando respuesta:", err);
+    }
+  }
+
+  // Render recursivo de hilo: usa 'respuestas' que tu serializer devuelve
+  function renderHilo(comentario, nivel = 0) {
+    return (
+      <div key={comentario.id} style={{ marginLeft: nivel * 18 }} className="mt-1">
+        <div className="p-2 border rounded-lg bg-gray-50">
+          <p className="font-semibold">{comentario.usuario_username}</p>
+          <p className="text-sm">{comentario.contenido}</p>
+
+          <div className="mt-2 flex gap-3 items-center">
+            {/* Puedes agregar Like aquí si lo deseas */}
+            <button
+              onClick={() => toggleRespuesta(comentario.id)}
+              className="text-xs text-blue-600"
+            >
+              Responder
+            </button>
+          </div>
+
+          {respuestasAbiertas[comentario.id] && (
+            <div className="mt-2">
+              <textarea
+                className="w-full border rounded-lg p-2 text-gray-800 text-sm"
+                rows="2"
+                placeholder="Escribe una respuesta..."
+                value={textoRespuesta[comentario.id] || ""}
+                onChange={(e) => setTextoRespuesta(prev => ({ ...prev, [comentario.id]: e.target.value }))}
+              />
+              <div className="mt-2">
+                <button
+                  onClick={() => enviarRespuesta(comentario.post, comentario.id)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs"
+                >
+                  Enviar respuesta
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sub-hilos recursivos */}
+        {comentario.respuestas && comentario.respuestas.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {comentario.respuestas.map((r) => renderHilo(r, nivel + 1))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 relative">
-
       {imagenSeleccionada && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
@@ -245,10 +322,9 @@ function ListaPost() {
               <button
                 className="flex items-center gap-1 hover:text-blue-600 transition"
                 onClick={() => {
-                  setComentarioAbierto(
-                    comentarioAbierto === post.id ? null : post.id
-                  );
-                  cargarComentarios(post.id);
+                  const nuevo = comentarioAbierto === post.id ? null : post.id;
+                  setComentarioAbierto(nuevo);
+                  if (nuevo) cargarComentarios(post.id);
                 }}
               >
                 <MessageCircle className="w-5 h-5" />
@@ -260,21 +336,16 @@ function ListaPost() {
             {comentarioAbierto === post.id && (
               <div className="mt-4">
 
-                {/* LISTADO DE COMENTARIOS */}
+                {/* LISTADO DE COMENTARIOS RAÍZ (cada uno trae 'respuestas') */}
                 <div className="space-y-2 mb-3">
-                  {comentarios.length === 0 ? (
+                  {!comentarios[post.id] || comentarios[post.id]?.length === 0 ? (
                     <p className="text-gray-500 text-sm">No hay comentarios aún.</p>
                   ) : (
-                    comentarios.map((c) => (
-                      <div key={c.id} className="p-2 border rounded-lg text-sm bg-gray-50">
-                        <p className="font-semibold">{c.usuario_username}</p>
-                        <p>{c.contenido}</p>
-                      </div>
-                    ))
+                    comentarios[post.id].map((c) => renderHilo(c))
                   )}
                 </div>
 
-                {/* ESCRIBIR COMENTARIO */}
+                {/* ESCRIBIR COMENTARIO RAÍZ */}
                 <textarea
                   className="w-full border rounded-lg p-2 text-gray-800"
                   rows="3"

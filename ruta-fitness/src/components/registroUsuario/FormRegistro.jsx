@@ -15,16 +15,40 @@ function FormRegistro() {
   const [nivelActividad, setNivelActividad] = useState("");
   const [lugarEntrenamiento, setLugarEntrenamiento] = useState("");
 
+  // ERRORES
+  const [errors, setErrors] = useState({});
+
+  function validarCampos() {
+    const newErrors = {};
+
+    if (!nombre.trim()) newErrors.nombre = "Este campo es obligatorio.";
+    if (!apellido.trim()) newErrors.apellido = "Este campo es obligatorio.";
+    if (!correo.trim()) newErrors.correo = "Ingrese un correo válido.";
+    if (!username.trim()) newErrors.username = "Este campo es obligatorio.";
+    if (!password.trim()) newErrors.password = "La contraseña no puede estar vacía.";
+
+    if (!edad.trim()) newErrors.edad = "Ingrese su edad.";
+    if (!peso.trim()) newErrors.peso = "Ingrese su peso.";
+    if (!altura.trim()) newErrors.altura = "Ingrese su altura.";
+
+    if (!nivelActividad.trim()) newErrors.nivelActividad = "Seleccione una opción.";
+    if (!lugarEntrenamiento.trim()) newErrors.lugarEntrenamiento = "Seleccione una opción.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
   async function cargarDatos() {
+    if (!validarCampos()) return;
+
     try {
       const userData = await llamadosD.postUsuariosD({
-        username: username,
-        email: correo,
-        first_name: nombre,
-        last_name: apellido,
-        password: password,
+        username: username.trim(),
+        email: correo.trim(),
+        first_name: nombre.trim(),
+        last_name: apellido.trim(),
+        password: password.trim(),
       });
-
 
       const usuarioData = {
         idUser: userData.id,
@@ -37,12 +61,7 @@ function FormRegistro() {
 
       await llamados.postUsuarios(usuarioData);
 
-      /* const info3 = {
-        user: userData.id, 
-        group: 3
-      } */
-
-      const grupoData = await llamadosGrupo.postGrupos({user: userData.id, group: 3})
+      await llamadosGrupo.postGrupos({ user: userData.id, group: 3 });
 
       alert("Cuenta creada correctamente");
     } catch (error) {
@@ -54,8 +73,7 @@ function FormRegistro() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white py-12">
       <div className="max-w-3xl mx-auto px-6">
-        
-        {/* Encabezado */}
+
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-semibold text-gray-900">Crear Cuenta</h1>
           <p className="text-gray-600">
@@ -63,15 +81,12 @@ function FormRegistro() {
           </p>
         </div>
 
-        {/* Card */}
         <div className="bg-white shadow-lg rounded-2xl p-10 border border-gray-200">
 
-          {/* FORMULARIO */}
           <div className="space-y-6">
 
-            {/* GRID 2 COLUMNAS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               <div>
                 <label className="block text-gray-800 mb-1">Nombre:</label>
                 <input
@@ -80,6 +95,7 @@ function FormRegistro() {
                   onChange={(e) => setNombre(e.target.value)}
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                 />
+                {errors.nombre && <p className="text-red-600 text-sm">{errors.nombre}</p>}
               </div>
 
               <div>
@@ -90,6 +106,7 @@ function FormRegistro() {
                   onChange={(e) => setApellido(e.target.value)}
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                 />
+                {errors.apellido && <p className="text-red-600 text-sm">{errors.apellido}</p>}
               </div>
 
               <div>
@@ -100,16 +117,18 @@ function FormRegistro() {
                   onChange={(e) => setCorreo(e.target.value)}
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                 />
+                {errors.correo && <p className="text-red-600 text-sm">{errors.correo}</p>}
               </div>
 
               <div>
                 <label className="block text-gray-800 mb-1">Nombre de usuario:</label>
                 <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                 />
+                {errors.username && <p className="text-red-600 text-sm">{errors.username}</p>}
               </div>
 
               <div>
@@ -120,10 +139,10 @@ function FormRegistro() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                 />
+                {errors.password && <p className="text-red-600 text-sm">{errors.password}</p>}
               </div>
             </div>
 
-            {/* SECCIÓN PERSONAL */}
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-gray-900 mb-4 font-medium">Información Personal</h3>
 
@@ -136,6 +155,7 @@ function FormRegistro() {
                     onChange={(e) => setEdad(e.target.value)}
                     className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                   />
+                  {errors.edad && <p className="text-red-600 text-sm">{errors.edad}</p>}
                 </div>
 
                 <div>
@@ -146,6 +166,7 @@ function FormRegistro() {
                     onChange={(e) => setPeso(e.target.value)}
                     className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                   />
+                  {errors.peso && <p className="text-red-600 text-sm">{errors.peso}</p>}
                 </div>
 
                 <div>
@@ -156,11 +177,11 @@ function FormRegistro() {
                     onChange={(e) => setAltura(e.target.value)}
                     className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-600 outline-none"
                   />
+                  {errors.altura && <p className="text-red-600 text-sm">{errors.altura}</p>}
                 </div>
               </div>
             </div>
 
-            {/* SELECTS */}
             <div>
               <label className="block text-gray-800 mb-1">Nivel de Actividad:</label>
               <select
@@ -173,6 +194,7 @@ function FormRegistro() {
                 <option value="medio">Medio</option>
                 <option value="alto">Alto</option>
               </select>
+              {errors.nivelActividad && <p className="text-red-600 text-sm">{errors.nivelActividad}</p>}
             </div>
 
             <div>
@@ -187,9 +209,9 @@ function FormRegistro() {
                 <option value="gimnasio">Gimnasio</option>
                 <option value="aire_libre">Aire Libre</option>
               </select>
+              {errors.lugarEntrenamiento && <p className="text-red-600 text-sm">{errors.lugarEntrenamiento}</p>}
             </div>
 
-            {/* BOTÓN */}
             <button
               onClick={cargarDatos}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition"
