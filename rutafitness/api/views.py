@@ -1,30 +1,54 @@
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, viewsets, permissions, generics
+from rest_framework.decorators import api_view, permission_classes
 
 from .models import *
 from .serializers import *
 from .ia_functions import comparar_progresos_opencv
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.permissions import IsAuthenticated
+from django.conf import settings
+
 
 User = get_user_model()
 UserGroup = User.groups.through
 
+EXPECTED_IMAGE_DOMAIN = 'cloudinary.com'
+
 
 # ========= UTILS ============
 def get_authenticated_user(request):
-    """Devuelve el usuario autenticado o lanza error."""
-    if not request.user or request.user.is_anonymous:
-        raise PermissionDenied("Debe iniciar sesión para realizar esta acción.")
-    return request.user
+    """Devuelve usuario autenticado o None."""
+    if request.user and not request.user.is_anonymous:
+        return request.user
+    return None
+
+ # ========= USUARIO ACTUAL ========= 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def usuario_actual(request):
+    """
+    Devuelve los datos del usuario actualmente autenticado.
+    """
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
 
 
 # ========= USER GROUP ============
 class UserGroupView(ListCreateAPIView):
+    queryset = UserGroup.objects.all()
+    serializer_class = UserGroupSerializers
+
+class UserGroupDetailView(RetrieveUpdateDestroyAPIView):
     queryset = UserGroup.objects.all()
     serializer_class = UserGroupSerializers
 
@@ -54,6 +78,11 @@ class UsuariosDetailView(RetrieveUpdateDestroyAPIView):
 
 
 class UserDListCreateView(ListCreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserDDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.AllowAny]  # ajusta si quieres permisos distintos
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -112,84 +141,81 @@ class RutinaEjercicioDetailView(RetrieveUpdateDestroyAPIView):
 
 # ========= USUARIO RUTINA ============
 class UsuarioRutinaListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = UsuarioRutina.objects.all()
     serializer_class = UsuarioRutinaSerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        serializer.save(usuario=user)
+        serializer.save(usuario=self.request.user)
 
 
 class UsuarioRutinaDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = UsuarioRutina.objects.all()
     serializer_class = UsuarioRutinaSerializer
 
 
-# ========= HISTORIAL ACTIVIDADES ============
+# ========= HISTORIAL ============
 class HistorialActividadesListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = HistorialActividades.objects.all()
     serializer_class = HistorialActividadesSerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        serializer.save(usuario=user)
+        serializer.save(usuario=self.request.user)
 
 
 class HistorialActividadesDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = HistorialActividades.objects.all()
     serializer_class = HistorialActividadesSerializer
 
 
 # ========= PROGRESO USUARIO ============
 class ProgresoUsuarioListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = ProgresoUsuario.objects.all()
     serializer_class = ProgresoUsuarioSerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        progreso = serializer.save(usuario=user)
+        serializer.save(usuario=self.request.user)
 
 
 class ProgresoUsuarioDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = ProgresoUsuario.objects.all()
     serializer_class = ProgresoUsuarioSerializer
 
 
-# ========= COMPARACIÓN IA ============
+# ========= COMPARACION IA ============
 class ComparacionIAListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = ComparacionIA.objects.all()
     serializer_class = ComparacionIASerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        comparacion = serializer.save(usuario=user)
-
-        foto_anterior = comparacion.foto_anterior
-        foto_nueva = comparacion.foto_nueva
-
-        if foto_anterior and foto_nueva:
-            resultado = comparar_progresos_opencv(foto_anterior, foto_nueva)
+        comparacion = serializer.save(usuario=self.request.user)
+        if comparacion.foto_anterior and comparacion.foto_nueva:
+            try:
+                resultado = comparar_progresos_opencv(
+                    comparacion.foto_anterior.url,
+                    comparacion.foto_nueva.url
+                )
+            except Exception as e:
+                resultado = f"Error IA: {e}"
         else:
             resultado = "Error: Fotos no válidas."
-
         comparacion.resultado = resultado
         comparacion.save()
 
 
 class ComparacionIADetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = ComparacionIA.objects.all()
     serializer_class = ComparacionIASerializer
 
 
-# ========= LOGRO ============
+# ========= LOGROS ============
 class LogroListCreateView(ListCreateAPIView):
     permission_classes = [permissions.AllowAny]
     queryset = Logro.objects.all()
@@ -204,17 +230,16 @@ class LogroDetailView(RetrieveUpdateDestroyAPIView):
 
 # ========= USUARIO LOGRO ============
 class UsuarioLogroListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = UsuarioLogro.objects.all()
     serializer_class = UsuarioLogroSerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        serializer.save(usuario=user)
+        serializer.save(usuario=self.request.user)
 
 
 class UsuarioLogroDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = UsuarioLogro.objects.all()
     serializer_class = UsuarioLogroSerializer
 
@@ -322,17 +347,16 @@ class ConversacionDetailView(RetrieveUpdateDestroyAPIView):
 
 # ========= MENSAJE CHAT ============
 class MensajeChatListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = MensajeChat.objects.all().order_by('-fecha_envio')
     serializer_class = MensajeChatSerializer
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        serializer.save(emisor=user)
+        serializer.save(usuario_emisor=self.request.user)
 
 
 class MensajeChatDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = MensajeChat.objects.all()
     serializer_class = MensajeChatSerializer
 
@@ -340,3 +364,123 @@ class MensajeChatDetailView(RetrieveUpdateDestroyAPIView):
 # ========= TOKEN ============
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+# ========= ADMIN ============
+class AdminUserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+# ========= IA DIRECTA ============
+@csrf_exempt
+def comparar_fotos_view(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        foto1_url = data.get("foto1_url")
+        foto2_url = data.get("foto2_url")
+
+        if not foto1_url or not foto2_url:
+            return JsonResponse({"error": "Debes enviar foto1_url y foto2_url"}, status=400)
+
+        if EXPECTED_IMAGE_DOMAIN not in foto1_url or EXPECTED_IMAGE_DOMAIN not in foto2_url:
+            return JsonResponse({"error": f"Solo se aceptan URLs de {EXPECTED_IMAGE_DOMAIN}"}, status=400)
+
+        resultado = comparar_progresos_opencv(foto1_url, foto2_url)
+        return JsonResponse({"resultado": resultado}, status=200)
+
+    except Exception as e:
+        return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
+
+
+class ProgresoUsuarioByUserView(generics.ListAPIView):
+    serializer_class = ProgresoUsuarioSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        return ProgresoUsuario.objects.filter(usuario__id=user_id)
+    
+
+# ========= CONTACTO MENSAJE EMAIL ============ 
+from api.utils.email_service import enviar_correo
+
+class ContactoView(APIView):
+    def post(self, request):
+        serializer = ContactoSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+
+        # Guarda en BD
+        MensajeContacto.objects.create(
+            nombre=data["name"],
+            correo=data["email"],
+            asunto=data["subject"],
+            mensaje=data["message"],
+        )
+
+        # Asunto tomado del usuario
+        subject = f"Contacto: {data['subject']}"
+
+        # Texto plano
+        body = f"""
+Nuevo mensaje recibido desde el formulario:
+
+Nombre: {data['name']}
+Correo: {data['email']}
+
+Mensaje:
+{data['message']}
+"""
+
+        # HTML mostrar correo con diseño
+        html_body = f"""
+<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+    <h2 style="color: #0A7E3E;">Nuevo mensaje desde el formulario</h2>
+
+    <p><strong>Nombre:</strong> {data['name']}</p>
+    <p><strong>Correo:</strong> {data['email']}</p>
+
+    <div style="margin-top: 20px; padding: 15px; background: #f6f6f6; border-left: 4px solid #0A7E3E;">
+        <strong>Mensaje:</strong>
+        <p>{data['message']}</p>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 12px; color: #777;">
+        Mensaje generado por el sistema de Ruta Fitness.
+    </p>
+</div>
+"""
+
+        enviar_correo(
+            subject=subject,
+            body=body,
+            destinatarios=[settings.EMAIL_HOST_USER],
+            reply_to=[data["email"]],
+            html_body=html_body,
+        )
+
+        return Response({"success": "Mensaje enviado correctamente"})
+    
+
+# ========= LLAMA AL PROCEDURE DEL RESUMEN DEL ADMIN ============
+from django.db import connection
+from django.http import JsonResponse
+
+def resumen_view(request):
+    with connection.cursor() as cursor:
+        cursor.execute("CALL obtener_resumen();")
+        row = cursor.fetchone()
+        data = {
+            "usuarios": row[0],
+            "entrenadores": row[1],
+            "sesiones": row[2],
+            "rutinas": row[3]
+        }
+    return JsonResponse(data)

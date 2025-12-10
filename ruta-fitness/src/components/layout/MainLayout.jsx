@@ -27,7 +27,7 @@ function AppHeader({ toggleSidebar }) {
                 </button>
                 <div className="flex items-center space-x-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-colors duration-200">
                     <User className="w-8 h-8 p-1 rounded-full text-indigo-600 bg-indigo-100" />
-                    <span className="text-sm font-medium text-gray-700 hidden sm:block">Juan Pérez</span>
+                    <span className="text-sm font-medium text-gray-700 hidden sm:block"></span>
                 </div>
             </div>
         </header>

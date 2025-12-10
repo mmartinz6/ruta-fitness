@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import llamados from "../../services/ServicesUsuarios";
 import llamadosD from "../../services/ServicesUserD";
-import llamadosGrupo from "../../services/servicesGrupo"
+import llamadosGrupo from "../../services/servicesGrupo";
 
 function FormRegistro() {
   const [nombre, setNombre] = useState("");
@@ -14,9 +15,11 @@ function FormRegistro() {
   const [altura, setAltura] = useState("");
   const [nivelActividad, setNivelActividad] = useState("");
   const [lugarEntrenamiento, setLugarEntrenamiento] = useState("");
+  const [sexo, setSexo] = useState("");
 
-  // ERRORES
   const [errors, setErrors] = useState({});
+  const [alerta, setAlerta] = useState({ mensaje: "", visible: false });
+  const navigate = useNavigate();
 
   function validarCampos() {
     const newErrors = {};
@@ -31,11 +34,20 @@ function FormRegistro() {
     if (!peso.trim()) newErrors.peso = "Ingrese su peso.";
     if (!altura.trim()) newErrors.altura = "Ingrese su altura.";
 
+    if (!sexo.trim()) newErrors.sexo = "Seleccione su sexo.";
     if (!nivelActividad.trim()) newErrors.nivelActividad = "Seleccione una opción.";
     if (!lugarEntrenamiento.trim()) newErrors.lugarEntrenamiento = "Seleccione una opción.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  }
+
+  function mostrarAlerta(mensaje) {
+    setAlerta({ mensaje, visible: true });
+    setTimeout(() => {
+      setAlerta({ mensaje: "", visible: false });
+      navigate("/login");
+    }, 2000);
   }
 
   async function cargarDatos() {
@@ -55,34 +67,48 @@ function FormRegistro() {
         edad,
         peso,
         altura,
+        sexo,
         nivel_actividad: nivelActividad,
         lugar_entrenamiento: lugarEntrenamiento,
       };
 
       await llamados.postUsuarios(usuarioData);
-
       await llamadosGrupo.postGrupos({ user: userData.id, group: 3 });
 
-      alert("Cuenta creada correctamente");
+      mostrarAlerta("Cuenta creada correctamente");
     } catch (error) {
       console.error("Error al registrar:", error);
-      alert("Error al crear la cuenta");
+      mostrarAlerta("Error al crear la cuenta");
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white py-12">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white py-12 relative">
+
+      {/* ALERTA VERDE MODERNA CENTRADA Y FONDO TRANSPARENTE */}
+      {alerta.visible && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-green-100 border-2 border-green-500 rounded-xl px-6 py-5 shadow-xl flex items-center space-x-4">
+            {/* ICONO DE ÉXITO */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L9.414 14l-3.707-3.707a1 1 0 111.414-1.414L9.414 11.586l6.293-6.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <p className="text-green-700 font-semibold text-lg">
+              {alerta.mensaje || "Cuenta creada exitosamente"}
+              </p>
+          </div>
+      </div>
+)}
+
+
       <div className="max-w-3xl mx-auto px-6">
 
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-semibold text-gray-900">Crear Cuenta</h1>
-          <p className="text-gray-600">
-            Completa tus datos para recibir una rutina personalizada
-          </p>
+          <p className="text-gray-600">Completa tus datos para recibir una rutina personalizada</p>
         </div>
 
         <div className="bg-white shadow-lg rounded-2xl p-10 border border-gray-200">
-
           <div className="space-y-6">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -180,6 +206,20 @@ function FormRegistro() {
                   {errors.altura && <p className="text-red-600 text-sm">{errors.altura}</p>}
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-800 mb-1">Sexo:</label>
+              <select
+                value={sexo}
+                onChange={(e) => setSexo(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg bg-white focus:ring-2 focus:ring-green-600 outline-none"
+              >
+                <option value="">Seleccione su sexo</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+              </select>
+              {errors.sexo && <p className="text-red-600 text-sm">{errors.sexo}</p>}
             </div>
 
             <div>

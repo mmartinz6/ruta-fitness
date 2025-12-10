@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const heroSlides = [
   {
@@ -29,8 +30,8 @@ const heroSlides = [
 
 function Carrusel() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const navigate = useNavigate();
 
-  // Cambio automático cada 5 segundos
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) =>
@@ -40,7 +41,6 @@ function Carrusel() {
     return () => clearInterval(interval);
   }, []);
 
-  // Funciones manuales
   const prevSlide = () =>
     setCurrentIndex((prev) =>
       prev === 0 ? heroSlides.length - 1 : prev - 1
@@ -56,16 +56,13 @@ function Carrusel() {
   return (
     <div className="relative w-full h-[90vh] overflow-hidden">
 
-      {/* Imagen de fondo */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-700"
         style={{ backgroundImage: `url(${slide.image})` }}
       >
-        {/* Overlay que NO bloquea clics */}
         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
       </div>
 
-      {/* Contenido */}
       <div className="relative z-20 flex flex-col items-center justify-center text-center h-full px-6">
         <h1 className="text-white text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
           {slide.title}
@@ -75,12 +72,14 @@ function Carrusel() {
           {slide.description}
         </p>
 
-        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+        <button
+          onClick={() => navigate("/login")}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+        >
           {slide.cta}
         </button>
       </div>
 
-      {/* Botón Izquierdo */}
       <button
         onClick={prevSlide}
         className="absolute left-4 top-1/2 -translate-y-1/2
@@ -91,7 +90,6 @@ function Carrusel() {
         ←
       </button>
 
-      {/* Botón Derecho */}
       <button
         onClick={nextSlide}
         className="absolute right-4 top-1/2 -translate-y-1/2
@@ -102,7 +100,6 @@ function Carrusel() {
         →
       </button>
 
-      {/* Indicadores */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
         {heroSlides.map((_, index) => (
           <div

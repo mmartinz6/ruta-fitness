@@ -3,12 +3,9 @@ import {
     Heart, Video, BookOpen, Clock, Loader, ExternalLink, Zap, RefreshCcw, AlertTriangle 
 } from 'lucide-react';
 
-// =================================================================
-// 0. CONFIGURACIÓN GLOBAL Y CONSTANTES
-// =================================================================
 
 // La clave se deja vacía. El entorno la inyectará automáticamente en el fetch.
-const apiKey = "AIzaSyDgcDuRP4BLucS9eXfBSXqQ3cELc0oOfi0"; 
+const apiKey = "AIzaSyDuFY1kWvYRFNYlT2V7qQEkROJiEMpWov8"; 
 // Usamos el modelo y la URL base para generateContent.
 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; 
 

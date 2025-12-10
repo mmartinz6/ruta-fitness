@@ -1,11 +1,11 @@
 import React from "react";
-/* import heroImg from "./img/contacto.jpg"; */
+import heroImg from "./img/entrenamiento.jpg";
 
 function HeroComunidad() {
   return (
     <section className="relative w-full h-[50vh] bg-gray-50">
       <img
-        /* src={heroImg} */
+        src={heroImg}
         alt="Contacto"
         className="w-full h-full object-cover brightness-75"
       />

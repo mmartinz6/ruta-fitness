@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { MessageCircle, Mail, Instagram, Facebook } from "lucide-react";
+import ServicesContacto from "../../services/ServicesContacto";
 
 function ContactoSeccion() {
   const [formData, setFormData] = useState({
@@ -9,15 +10,54 @@ function ContactoSeccion() {
     message: "",
   });
 
-  const handleSend = () => {
-    console.log("Datos a enviar:", formData);
-    alert("Mensaje enviado!");
-    setFormData({ name: "", email: "", subject: "", message: "" });
+  const [errors, setErrors] = useState({});
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const validarContacto = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) newErrors.name = "Este campo es obligatorio.";
+    if (!formData.email.trim()) newErrors.email = "Ingrese un correo válido.";
+    if (!formData.subject.trim()) newErrors.subject = "Este campo es obligatorio.";
+    if (!formData.message.trim()) newErrors.message = "El mensaje no puede estar vacío.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSend = async () => {
+    if (!validarContacto()) return;
+
+    try {
+      await ServicesContacto.postContacto(formData);
+
+      setSuccessMsg("Mensaje enviado correctamente.");
+      setErrorMsg("");
+
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+
+      setErrors({});
+
+      setTimeout(() => setSuccessMsg(""), 4000);
+
+    } catch (error) {
+      setErrorMsg("Hubo un error al enviar el mensaje.");
+      setSuccessMsg("");
+
+      setTimeout(() => setErrorMsg(""), 4000);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid lg:grid-cols-3 gap-8">
+
         {/* Formulario */}
         <div className="lg:col-span-2">
           <div className="p-8 border-gray-200 shadow-sm bg-white rounded-lg">
@@ -26,22 +66,51 @@ function ContactoSeccion() {
                 <MessageCircle className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h2 className="text-gray-900 text-xl font-semibold">Envíanos un Mensaje</h2>
-                <p className="text-gray-600 text-sm">Responderemos en menos de 24 horas</p>
+                <h2 className="text-gray-900 text-xl font-semibold">
+                  Envíanos un Mensaje
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  Responderemos en menos de 24 horas
+                </p>
               </div>
             </div>
 
             <div className="space-y-6">
+
+              {/* NOTIFICACIONES */}
+              {successMsg && (
+                <div
+                  className="p-4 mb-4 text-sm font-medium text-green-700 rounded-lg bg-green-100 border border-green-300"
+                  role="alert"
+                >
+                  {successMsg}
+                </div>
+              )}
+
+              {errorMsg && (
+                <div
+                  className="p-4 mb-4 text-sm font-medium text-red-700 rounded-lg bg-red-100 border border-red-300"
+                  role="alert"
+                >
+                  {errorMsg}
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-gray-700">Nombre Completo</label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="Tu nombre"
                     className="mt-2 w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
+                  {errors.name && (
+                    <p className="text-red-600 text-sm">{errors.name}</p>
+                  )}
                 </div>
 
                 <div>
@@ -49,10 +118,15 @@ function ContactoSeccion() {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     placeholder="tu@email.com"
                     className="mt-2 w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
+                  {errors.email && (
+                    <p className="text-red-600 text-sm">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -61,21 +135,31 @@ function ContactoSeccion() {
                 <input
                   type="text"
                   value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subject: e.target.value })
+                  }
                   placeholder="¿En qué podemos ayudarte?"
                   className="mt-2 w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
+                {errors.subject && (
+                  <p className="text-red-600 text-sm">{errors.subject}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-gray-700">Mensaje</label>
                 <textarea
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, message: e.target.value })
+                  }
                   placeholder="Escribe tu mensaje aquí..."
                   className="mt-2 w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   rows={6}
                 />
+                {errors.message && (
+                  <p className="text-red-600 text-sm">{errors.message}</p>
+                )}
               </div>
 
               <button
@@ -91,7 +175,9 @@ function ContactoSeccion() {
         {/* Sidebar */}
         <div className="space-y-6">
           <div className="p-6 border-gray-200 shadow-sm bg-white rounded-lg">
-            <h3 className="text-gray-900 text-lg font-semibold mb-4">Síguenos en Redes</h3>
+            <h3 className="text-gray-900 text-lg font-semibold mb-4">
+              Síguenos en Redes
+            </h3>
             <div className="flex flex-col gap-3">
               <a
                 href="https://instagram.com"
@@ -115,7 +201,9 @@ function ContactoSeccion() {
           </div>
 
           <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="text-gray-900 text-lg font-semibold mb-4">Horario de Atención</h3>
+            <h3 className="text-gray-900 text-lg font-semibold mb-4">
+              Horario de Atención
+            </h3>
             <div className="space-y-2 text-gray-600">
               <p>Lunes a Viernes: 9:00 - 18:00</p>
               <p>Sábados: 10:00 - 14:00</p>
@@ -126,7 +214,8 @@ function ContactoSeccion() {
           <div className="p-6 border-gray-200 shadow-sm bg-white rounded-lg">
             <h4 className="text-gray-900 mb-2">Nota Importante</h4>
             <p className="text-gray-600">
-              Esta plataforma es un complemento educativo. Para casos médicos o lesiones, consulta siempre con un profesional de la salud.
+              Esta plataforma es un complemento educativo. Para casos médicos o
+              lesiones, consulta siempre con un profesional de la salud.
             </p>
           </div>
         </div>

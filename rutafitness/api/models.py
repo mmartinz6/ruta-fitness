@@ -4,25 +4,40 @@ from django.contrib.auth.models import User
 class Usuarios(models.Model):
     # Clave foránea al usuario de autenticación de Django
     idUser = models.ForeignKey(User, on_delete=models.CASCADE, related_name="Usuarios")
+
+    # NUEVO CAMPO: Sexo
+    sexo = models.CharField(
+        max_length=10,
+        choices=[
+            ('masculino', 'Masculino'),
+            ('femenino', 'Femenino')
+        ],
+        default='masculino'  #default masculino
+    )
+
     edad = models.IntegerField()
     peso = models.DecimalField(max_digits=5, decimal_places=2)
     altura = models.DecimalField(max_digits=5, decimal_places=2)
+
     nivel_actividad = models.CharField(max_length=20, choices=[
         ('bajo', 'Bajo'),
         ('medio', 'Medio'),
         ('alto', 'Alto')
     ])
 
-    #  NUEVO CAMPO: Lugar Preferido de Entrenamiento
-    lugar_entrenamiento = models.CharField(max_length=20, choices=[
-        ('casa', 'En Casa'),
-        ('gimnasio', 'Gimnasio'),
-        ('aire_libre', 'Aire Libre')
-    ], default='casa') # Puedes poner un valor por defecto
+    # NUEVO CAMPO: Lugar Preferido de Entrenamiento
+    lugar_entrenamiento = models.CharField(
+        max_length=20,
+        choices=[
+            ('casa', 'En Casa'),
+            ('gimnasio', 'Gimnasio'),
+            ('aire_libre', 'Aire Libre')
+        ],
+        default='casa'
+    )
 
     def __str__(self):
         return f"Perfil de {self.idUser.username}"
-
 
 
 #  CATEGORÍAS Y EJERCICIOS 
@@ -44,7 +59,6 @@ class Ejercicio(models.Model):
         ('medio', 'Medio'),
         ('avanzado', 'Avanzado')
     ])
-    duracion_estimada = models.IntegerField(help_text="Duración en minutos")
 
     def __str__(self):
         return f"{self.nombre} ({self.nivel})"
@@ -104,11 +118,9 @@ class HistorialActividades(models.Model):
         return f"{self.usuario.username} - {self.fecha_realizacion.strftime('%Y-%m-%d')}"
 
 
-
-# === PROGRESO Y COMPARACIÓN ===
-
+# PROGRESO Y COMPARACIÓN
 class ProgresoUsuario(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progresos")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progresos", null=True, blank=True)
     peso_actual = models.DecimalField(max_digits=5, decimal_places=2)
     hombros = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     espalda = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -119,16 +131,13 @@ class ProgresoUsuario(models.Model):
     brazo1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     brazo2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     fecha_registro = models.DateField(auto_now_add=True)
-    foto_url = models.CharField(max_length=255, null=True, blank=True)
-    analisis_ia = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Progreso de {self.usuario.username} - {self.fecha_registro}"
 
 
-
 class ComparacionIA(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comparaciones_ia")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comparaciones_ia", null=True, blank=True)
     
     #CAMPOS CRÍTICOS AÑADIDOS
     foto_anterior = models.CharField(max_length=255) 
@@ -251,3 +260,15 @@ class MensajeChat(models.Model):
 
     def __str__(self):
         return f"Mensaje de {self.usuario_emisor.username} ({'Leído' if self.leido else 'No leído'})"
+    
+
+# MENSAJES CONTACTO EMAIL 
+class MensajeContacto(models.Model):
+    nombre = models.CharField(max_length=100)
+    correo = models.EmailField()
+    asunto = models.CharField(max_length=150)
+    mensaje = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.asunto}"

@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import { Bold, Italic, Underline, Image, X } from "lucide-react";
 import llamadopublicaciones from "../../services/ServicesPublicaciones";
 import { uploadToCloudinary } from "../cloud/SubirCloudinary";
+import { useNavigate } from "react-router-dom";
+
 
 function CrearPost() {
   const [archivoImagen, setArchivoImagen] = useState(null);
@@ -10,13 +12,26 @@ function CrearPost() {
 
   const token = localStorage.getItem("access");
 
-  if (!token) {
-    return (
-      <p className="text-center text-gray-600 text-sm py-6">
+  const navigate = useNavigate();
+
+if (!token) {
+  return (
+    <div className="text-center py-6">
+      <p className="text-gray-600 text-sm mb-3">
         Debes iniciar sesión para publicar.
       </p>
-    );
-  }
+
+      <button
+  onClick={() => navigate("/login?redirect=/comunidad")}
+  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+>
+  Iniciar sesión
+</button>
+
+    </div>
+  );
+}
+
 
   function aplicarFormato(comando) {
     document.execCommand(comando, false, null);

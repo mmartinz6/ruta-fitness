@@ -1,8 +1,11 @@
 import React from 'react'
+import EntrenadorDashboard from '../components/Entrenador/EntrenadorDashboard'
 
 function DashboardEntrenador() {
   return (
-    <div>DashboardEntrenador</div>
+    <div>
+      <EntrenadorDashboard />
+    </div>
   )
 }
 
