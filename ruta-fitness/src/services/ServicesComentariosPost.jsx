@@ -1,83 +1,58 @@
-// === Base URL ===
+import { apiClient } from "./ApiClient";
+// === Base URL === 
 const BASE = "http://127.0.0.1:8000/api/comentario-posts/";
 
 // === Crear Comentario ===
 async function crearComentario(info) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch(BASE, {
+        const comentarioCreado = await apiClient(BASE, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
             body: JSON.stringify(info)
         });
-
-        if (!response.ok) throw new Error("Error al crear comentario");
-
-        return await response.json();
+        return comentarioCreado;
     } catch (error) {
         console.error("Error creando comentario:", error);
+        throw error;
     }
 }
 
 // === Obtener Comentarios por Post ===
 async function getComentarios(postId) {
     try {
-        const response = await fetch(`${BASE}?post=${postId}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
+        const comentarios = await apiClient(`${BASE}?post=${postId}`, {
+            method: "GET"
         });
-
-        if (!response.ok) throw new Error("Error al obtener comentarios");
-
-        return await response.json();
+        return comentarios;
     } catch (error) {
         console.error("Error obteniendo comentarios:", error);
+        throw error;
     }
 }
 
 // === Editar Comentario ===
 async function editarComentario(id, info) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch(`${BASE}${id}/`, {
+        const comentarioEditado = await apiClient(`${BASE}${id}/`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
             body: JSON.stringify(info)
         });
-
-        if (!response.ok) throw new Error("Error al editar comentario");
-
-        return await response.json();
+        return comentarioEditado;
     } catch (error) {
         console.error("Error editando comentario:", error);
+        throw error;
     }
 }
 
 // === Eliminar Comentario ===
 async function eliminarComentario(id) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch(`${BASE}${id}/`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": token ? `Bearer ${token}` : ""
-            }
+        await apiClient(`${BASE}${id}/`, {
+            method: "DELETE"
         });
-
-        return response;
+        return true;
     } catch (error) {
         console.error("Error eliminando comentario:", error);
+        throw error;
     }
 }
 

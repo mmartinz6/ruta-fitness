@@ -8,7 +8,9 @@ urlpatterns = [
     path('usuarios/<int:pk>/', views.UsuariosDetailView.as_view(), name='usuarios-detail'),
 
     path('usuariosD/', views.UserDListCreateView.as_view(), name='usuariosd-list-create'),
+    path('usuariosD/<int:pk>/', views.UserDDetailView.as_view(), name='usuariosd-detail'),
     path('usergroup/', views.UserGroupView.as_view(), name='usergroup-listar-crear'),
+    path('usergroup/<int:pk>/', views.UserGroupDetailView.as_view(), name='usergroup-detail'),
 
     # === TOKEN ===
     path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -75,4 +77,11 @@ urlpatterns = [
     # === MENSAJES EN CHAT ===
     path('mensajes-chat/', views.MensajeChatListCreateView.as_view(), name='mensajechat-list-create'),
     path('mensajes-chat/<int:pk>/', views.MensajeChatDetailView.as_view(), name='mensajechat-detail'),
+
+     # === MENSAJES CONTACTO EMAIL ===
+    path("contacto/", views.ContactoView.as_view()),
+
+    # === RESUMEN STORED PROCEDURE ===
+    path('resumen/', views.resumen_view, name='resumen'),
+    
 ]

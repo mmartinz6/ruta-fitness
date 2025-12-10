@@ -14,6 +14,8 @@ import Registro from '../pages/Registro';
 
 // Páginas privadas
 import DashboardPage from '../pages/DashboardPage';
+import DashboardAdmin from '../pages/DashboardAdmin';
+import DashboardEntrenador from '../pages/DashboardEntrenador';
 import PrivateRoute from "./PrivateRoute";
 
 // Simulaciones / placeholders
@@ -34,6 +36,10 @@ function Routing() {
         <Route path="/comunidad" element={<Comunidad />} />
         <Route path="/contacto" element={<Contacto />} />
         <Route path="/bienestar" element={<BienestarPage />} />
+
+        <Route path="/dashboardadmin" element={<DashboardAdmin />} />
+        <Route path="/dashboardentrenador" element={<DashboardEntrenador />} />
+
 
         {/* Login y Registro también sin sidebar */}
         <Route path="/login" element={<Login />} />

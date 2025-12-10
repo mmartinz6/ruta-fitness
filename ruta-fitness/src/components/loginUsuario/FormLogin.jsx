@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import '../loginUsuario/FormLogin.css';
 import login from '../../services/servicesLogin';
 
 function FormLogin() {
   const [identificador, setIdentificador] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState(''); //Mensaje de error
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get("redirect") || "/";
 
   async function manejarLogin() {
-
-    //VALIDACIÓN CAMPOS VACÍOS
     if (!identificador || !password) {
       setErrorMsg("Ingrese su usuario/correo y contraseña.");
       return;
@@ -23,21 +25,40 @@ function FormLogin() {
         password: password,
       });
 
-      console.log("Login exitoso:", datos);
-
       localStorage.setItem("access", datos.access);
       localStorage.setItem("refresh", datos.refresh);
-      if (datos.role) localStorage.setItem("role", datos.role);
-      if (datos.id) localStorage.setItem("userId", datos.id);
 
+      if (datos.role) {
+        localStorage.setItem("role", datos.role);
+      }
+
+      if (datos.id) {
+        localStorage.setItem("userId", datos.id);
+      }
+
+      const nombreUsuario =
+        datos.username ||
+        datos.user?.username ||
+        datos.profile?.username ||
+        identificador;
+
+      localStorage.setItem("username", nombreUsuario);
       localStorage.setItem("auth", "true");
 
-      navigate("/dashboard");
+      // Redirección automática según rol
+      if (datos.role === "Administrador") {
+        navigate("/dashboardadmin");
+      } else if (datos.role === "Entrenador") {
+        navigate("/dashboardentrenador");
+      } else {
+        navigate(redirectTo);
+      }
+
       window.location.reload();
 
     } catch (error) {
       console.error("Error en login:", error);
-      setErrorMsg("Usuario o contraseña incorrectos."); //ERROR EN ROJO
+      setErrorMsg("Usuario o contraseña incorrectos.");
     }
   }
 
@@ -73,7 +94,6 @@ function FormLogin() {
                      focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
         />
 
-        {/*MENSAJE DE ERROR EN ROJO */}
         {errorMsg && (
           <p className="text-red-600 text-sm mt-1 mb-3 text-center">
             {errorMsg}

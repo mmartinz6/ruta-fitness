@@ -1,25 +1,13 @@
+import { apiClient } from "./ApiClient";
+
 // === Crear Post ===
 async function crearPost(info) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch("http://127.0.0.1:8000/api/comunidad-posts/", {
+        const postCreado = await apiClient("http://127.0.0.1:8000/api/comunidad-posts/", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
             body: JSON.stringify(info)
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Respuesta del servidor:", errorText);
-            throw new Error("Error al crear el post");
-        }
-
-        return await response.json();
-
+        return postCreado;
     } catch (error) {
         console.error("Error creando post", error);
         throw error;
@@ -29,20 +17,10 @@ async function crearPost(info) {
 // === Obtener Posts (GET) ===
 async function getPosts() {
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/comunidad-posts/", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
+        const posts = await apiClient("http://127.0.0.1:8000/api/comunidad-posts/", {
+            method: "GET"
         });
-
-        if (!response.ok) {
-            throw new Error("Error al obtener los posts");
-        }
-
-        const posts = await response.json();
         return posts;
-
     } catch (error) {
         console.error("Hay un error al obtener los posts", error);
         throw error;
@@ -52,22 +30,11 @@ async function getPosts() {
 // === Editar Post (PUT) ===
 async function editarPost(id, infoActualizada) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch(`http://127.0.0.1:8000/api/comunidad-posts/${id}/`, {
+        const postEditado = await apiClient(`http://127.0.0.1:8000/api/comunidad-posts/${id}/`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
             body: JSON.stringify(infoActualizada)
         });
-
-        if (!response.ok) {
-            throw new Error("Error al editar el post");
-        }
-
-        return await response.json();
+        return postEditado;
     } catch (error) {
         console.error("Error editando el post", error);
         throw error;
@@ -77,42 +44,29 @@ async function editarPost(id, infoActualizada) {
 // === Eliminar Post (DELETE) ===
 async function eliminarPost(id) {
     try {
-        const token = localStorage.getItem("access");
-
-        const response = await fetch(`http://127.0.0.1:8000/api/comunidad-posts/${id}/`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": token ? `Bearer ${token}` : ""
-            }
+        await apiClient(`http://127.0.0.1:8000/api/comunidad-posts/${id}/`, {
+            method: "DELETE"
         });
-
-        return response.ok;
+        return true;
     } catch (error) {
         console.error("Error eliminando el post", error);
         throw error;
     }
 }
 
-
 // === Toggle Like ===
 async function toggleLike(postId) {
-    const token = localStorage.getItem("access");
-    const res = await fetch(`http://127.0.0.1:8000/api/posts/${postId}/toggle-like/`, {
-        method: "POST",
-        headers: {
-            "Authorization": token ? `Bearer ${token}` : "",
-            "Content-Type": "application/json"
-        }
-    });
-
-    if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error al dar like:", errorText);
-        throw new Error("Error al dar like");
+    try {
+        const resultado = await apiClient(`http://127.0.0.1:8000/api/posts/${postId}/toggle-like/`, {
+            method: "POST"
+        });
+        return resultado; // { liked: true/false, num_reacciones: X }
+    } catch (error) {
+        console.error("Error al dar like:", error);
+        throw error;
     }
-
-    return await res.json(); // { liked: true/false, num_reacciones: X }
 }
 
-// === Exportación ===
+
 export default { crearPost, getPosts, editarPost, eliminarPost, toggleLike };
+
