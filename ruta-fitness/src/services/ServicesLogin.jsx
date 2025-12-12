@@ -1,33 +1,80 @@
-// servicesLogin.js
+const API_URL = "http://127.0.0.1:8000/api";
+
+/**
+ * Hace login y devuelve tokens + usuario activo
+ */
 async function loginUsuario(credenciales) {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/token/", {
+    console.log("📌 Enviando credenciales:", credenciales);
+
+    // 1️⃣ LOGIN → obtener tokens
+    const tokenResponse = await fetch(`${API_URL}/token/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credenciales),
     });
 
-    if (!response.ok) {
+    if (!tokenResponse.ok) {
       throw new Error("Credenciales incorrectas");
     }
 
-    const data = await response.json();
+    const tokenData = await tokenResponse.json();
+    console.log("🔑 Tokens recibidos:", tokenData);
 
-    // Validar estructura
+    // 2️⃣ OBTENER usuario activo
+    const userResponse = await fetch(`${API_URL}/usuarios/me/`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenData.access}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      throw new Error("No se pudo obtener el usuario actual");
+    }
+
+    const userData = await userResponse.json();
+    console.log("👤 Usuario activo:", userData);
+
+    // 3️⃣ Guardar usuario en localStorage
+    localStorage.setItem("usuarioActivo", JSON.stringify(userData));
+
     return {
-      access: data.access,
-      refresh: data.refresh,
-      role: data.role || data.user_role || null,
-      id: data.id || data.user_id || null,
-      username: data.username || null,
+      ...tokenData,
+      usuario: userData,
     };
-
   } catch (error) {
-    console.error("Error en el login:", error);
+    console.error("❌ Error en loginUsuario:", error);
     throw error;
   }
 }
 
-export default { loginUsuario };
+/**
+ * Obtiene usuario activo desde localStorage
+ */
+function getUsuarioActivo() {
+  const data = localStorage.getItem("usuarioActivo");
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("❌ Error parseando usuarioActivo:", error);
+    return null;
+  }
+}
+
+/**
+ * Logout → elimina tokens y usuarioActivo
+ */
+function logoutUsuario() {
+  localStorage.removeItem("usuarioActivo");
+  // Si guardas tokens también eliminarlos:
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+}
+
+export default {
+  loginUsuario,
+  getUsuarioActivo,
+  logoutUsuario,
+};

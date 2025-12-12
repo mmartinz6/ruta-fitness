@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Eye, Pencil, Trash2, Plus, X } from "lucide-react";
 
-// Servicios reales
-import userData from "../../services/ServicesUserD";       // Django Users (usuariosD)
-import userInfo from "../../services/ServicesUsuarios";    // Perfil (Usuarios)
-import gruposAPI from "../../services/servicesGrupo";      // Grupo/roles (usergroup)
+// Servicios
+import userData from "../../services/ServicesUserD";       // Django Users
+import userInfo from "../../services/ServicesUsuarios";    // Perfil
+import gruposAPI from "../../services/servicesGrupo";      // Grupo/roles
 
 function UsuariosSeccion() {
   const [usuarios, setUsuarios] = useState([]);
@@ -25,7 +25,6 @@ function UsuariosSeccion() {
     height: "",
   });
 
-  // Filtros
   const [filtroNombre, setFiltroNombre] = useState("");
   const [filtroUsuario, setFiltroUsuario] = useState("");
   const [filtroEmail, setFiltroEmail] = useState("");
@@ -44,7 +43,7 @@ function UsuariosSeccion() {
 
       const final = baseUsers
         .filter(u => !u.is_superuser)
-        .map((u) => {
+        .map(u => {
           const info = infoUsers.find(x => x.idUser === u.id);
           const grupoAsignado = grupos.find(g => g.user === u.id);
           const nombreGrupo = grupoAsignado?.group_name?.trim() || "Cliente";
@@ -166,53 +165,57 @@ function UsuariosSeccion() {
   };
 
   const handleGuardarEdicion = async () => {
-    try {
-      if (!usuarioSeleccionado) throw new Error("No hay usuario seleccionado");
+  try {
+    if (!usuarioSeleccionado) throw new Error("No hay usuario seleccionado");
 
-      await userData.putUsuariosD(usuarioSeleccionado.id, {
-        first_name: form.firstName,
-        last_name: form.lastName,
-        email: form.email,
-      });
+    await userData.putUsuariosD(usuarioSeleccionado.id, {
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      email: form.email.trim(),
+    });
 
-      const perfilData = {
-        idUser: usuarioSeleccionado.id,
-        edad: Number(form.age) || 0,
-        peso: Number(form.weight) || 0,
-        altura: Number(form.height) || 0,
-        nivel_actividad: form.activityLevel || "bajo",
-        lugar_entrenamiento: form.trainingPlace || "casa",
-      };
+    // Mapeo de valores válidos para Django
+    const lugarEntrenamientoMap = { Casa: "casa", Gimnasio: "gimnasio", "Aire Libre": "aire_libre" };
 
-      if (usuarioSeleccionado.profileId) {
-        await userInfo.putUsuarios(usuarioSeleccionado.profileId, perfilData);
-      } else if (form.role === "Cliente") {
-        await userInfo.postUsuarios(perfilData);
-      }
+    const perfilData = {
+      idUser: usuarioSeleccionado.id,
+      edad: Number(form.age) || 0,
+      peso: Number(form.weight) || 0,
+      altura: Number(form.height) || 0,
+      nivel_actividad: form.activityLevel || "bajo",
+      lugar_entrenamiento: lugarEntrenamientoMap[form.trainingPlace] || "casa",
+    };
 
-      const roleMap = { Administrador: 1, Entrenador: 2, Cliente: 3 };
-      const grupos = await gruposAPI.getGrupos();
-      const grupoActual = grupos.find(g => g.user === usuarioSeleccionado.id);
-      const nuevoGroupId = roleMap[form.role] || 3;
+    if (usuarioSeleccionado.profileId) {
+      await userInfo.putUsuarios(usuarioSeleccionado.profileId, perfilData);
+    } else if (form.role === "Cliente") {
+      await userInfo.postUsuarios(perfilData);
+    }
 
-      if (grupoActual) {
-        if (Number(grupoActual.group) !== Number(nuevoGroupId)) {
-          await gruposAPI.deleteGrupos(grupoActual.id);
-          await gruposAPI.postGrupos({ user: usuarioSeleccionado.id, group: nuevoGroupId });
-        }
-      } else {
+    const roleMap = { Administrador: 1, Entrenador: 2, Cliente: 3 };
+    const grupos = await gruposAPI.getGrupos();
+    const grupoActual = grupos.find(g => g.user === usuarioSeleccionado.id);
+    const nuevoGroupId = roleMap[form.role] || 3;
+
+    if (grupoActual) {
+      if (Number(grupoActual.group) !== Number(nuevoGroupId)) {
+        await gruposAPI.deleteGrupos(grupoActual.id);
         await gruposAPI.postGrupos({ user: usuarioSeleccionado.id, group: nuevoGroupId });
       }
-
-      await cargarUsuarios();
-      setIsEditing(false);
-      setModalUser(false);
-      alert("Usuario actualizado correctamente");
-    } catch (e) {
-      console.error("handleGuardarEdicion error:", e);
-      alert(e.message || "Error al actualizar usuario");
+    } else {
+      await gruposAPI.postGrupos({ user: usuarioSeleccionado.id, group: nuevoGroupId });
     }
-  };
+
+    await cargarUsuarios();
+    setIsEditing(false);
+    setModalUser(false);
+    alert("Usuario actualizado correctamente");
+  } catch (e) {
+    console.error("handleGuardarEdicion error:", e);
+    alert(e.message || "Error al actualizar usuario");
+  }
+};
+
 
   const handleEliminar = async (u) => {
     if (!u) return;
@@ -262,12 +265,11 @@ function UsuariosSeccion() {
     setModalUser(true);
   };
 
-  // Separar usuarios activos y desactivados
   const usuariosActivos = usuariosFiltrados.filter(u => u.is_active);
   const usuariosDesactivados = usuariosFiltrados.filter(u => !u.is_active);
 
   const renderUsuarios = (listaUsuarios) =>
-    listaUsuarios.map((u) => (
+    listaUsuarios.map(u => (
       <tr
         key={u.id}
         className={`border-b hover:bg-gray-50 transition ${!u.is_active ? "bg-gray-100 text-gray-400 line-through" : ""}`}
@@ -287,7 +289,6 @@ function UsuariosSeccion() {
         </td>
       </tr>
     ));
-
 
   return (
     <div className="p-6">

@@ -51,3 +51,6 @@ async function deleteUsuariosD(id) {
 }
 
 export default { getUsuariosD, postUsuariosD, putUsuariosD, deleteUsuariosD };
+
+
+

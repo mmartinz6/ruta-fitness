@@ -1,87 +1,104 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import *
+from .views import ProgresoUsuarioByUserView
+
+router = DefaultRouter()
+router.register(r'admin/users', AdminUserViewSet, basename='admin-users')
 
 urlpatterns = [
 
-    # === PERFIL USUARIO ===
-    path('usuarios/', views.UsuariosListCreateView.as_view(), name='usuarios-list-create'),
-    path('usuarios/<int:pk>/', views.UsuariosDetailView.as_view(), name='usuarios-detail'),
-
-    path('usuariosD/', views.UserDListCreateView.as_view(), name='usuariosd-list-create'),
-    path('usuariosD/<int:pk>/', views.UserDDetailView.as_view(), name='usuariosd-detail'),
-    path('usergroup/', views.UserGroupView.as_view(), name='usergroup-listar-crear'),
-    path('usergroup/<int:pk>/', views.UserGroupDetailView.as_view(), name='usergroup-detail'),
-
     # === TOKEN ===
-    path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
 
-    # === CATEGORÍA ===
-    path('categorias/', views.CategoriaListCreateView.as_view(), name='categoria-list-create'),
-    path('categorias/<int:pk>/', views.CategoriaDetailView.as_view(), name='categoria-detail'),
+    # === USUARIO ACTUAL ===
+    path('usuarios/me/', usuario_actual, name='usuario-actual'),
 
-    # === EJERCICIO ===
-    path('ejercicios/', views.EjercicioListCreateView.as_view(), name='ejercicio-list-create'),
-    path('ejercicios/<int:pk>/', views.EjercicioDetailView.as_view(), name='ejercicio-detail'),
+    # === USUARIOS ===
+    path('usuarios/', UsuariosListCreateView.as_view(), name='usuarios-list-create'),
+    path('usuarios/<int:pk>/', UsuariosDetailView.as_view(), name='usuarios-detail'),
 
-    # === RUTINA ===
-    path('rutinas/', views.RutinaListCreateView.as_view(), name='rutina-list-create'),
-    path('rutinas/<int:pk>/', views.RutinaDetailView.as_view(), name='rutina-detail'),
+    # === USUARIOS - DATOS DETALLADOS (UserD) ===
+    path('usuariosD/', UserDListCreateView.as_view(), name='usuariosd-list-create'),
+    path('usuariosD/<int:pk>/', UserDDetailView.as_view(), name='usuariosd-detail'),
 
-    # === RUTINA-EJERCICIO (Intermedia) ===
-    path('rutina-ejercicios/', views.RutinaEjercicioListCreateView.as_view(), name='rutinaejercicio-list-create'),
-    path('rutina-ejercicios/<int:pk>/', views.RutinaEjercicioDetailView.as_view(), name='rutinaejercicio-detail'),
+    # === USER GROUPS ===
+    path('usergroup/', UserGroupView.as_view(), name='usergroup-listar-crear'),
+    path('usergroup/<int:pk>/', UserGroupDetailView.as_view(), name='usergroup-detail'),
 
-    # === USUARIO-RUTINA (Asignaciones) ===
-    path('usuario-rutinas/', views.UsuarioRutinaListCreateView.as_view(), name='usuariorutina-list-create'),
-    path('usuario-rutinas/<int:pk>/', views.UsuarioRutinaDetailView.as_view(), name='usuariorutina-detail'),
+    # === CATEGORÍAS ===
+    path('categorias/', CategoriaListCreateView.as_view(), name='categorias-list-create'),
+    path('categorias/<int:pk>/', CategoriaDetailView.as_view(), name='categorias-detail'),
 
-    # === HISTORIAL DE ACTIVIDADES ===
-    path('historial-actividades/', views.HistorialActividadesListCreateView.as_view(), name='historialactividades-list-create'),
-    path('historial-actividades/<int:pk>/', views.HistorialActividadesDetailView.as_view(), name='historialactividades-detail'),
+    # === EJERCICIOS ===
+    path('ejercicios/', EjercicioListCreateView.as_view(), name='ejercicios-list-create'),
+    path('ejercicios/<int:pk>/', EjercicioDetailView.as_view(), name='ejercicios-detail'),
 
-    # === PROGRESO USUARIO ===
-    path('progresos-usuario/', views.ProgresoUsuarioListCreateView.as_view(), name='progresousuario-list-create'),
-    path('progresos-usuario/<int:pk>/', views.ProgresoUsuarioDetailView.as_view(), name='progresousuario-detail'),
+    # === RUTINAS ===
+    path('rutinas/', RutinaListCreateView.as_view(), name='rutinas-list-create'),
+    path('rutinas/<int:pk>/', RutinaDetailView.as_view(), name='rutinas-detail'),
 
-    # === COMPARACIÓN IA ===
-    path('comparaciones-ia/', views.ComparacionIAListCreateView.as_view(), name='comparacionia-list-create'),
-    path('comparaciones-ia/<int:pk>/', views.ComparacionIADetailView.as_view(), name='comparacionia-detail'),
+    # === RUTINA - EJERCICIOS ===
+    path('rutina-ejercicios/', RutinaEjercicioListCreateView.as_view(), name='rutina-ejercicios-list-create'),
+    path('rutina-ejercicios/<int:pk>/', RutinaEjercicioDetailView.as_view(), name='rutina-ejercicios-detail'),
+
+    # === USUARIO - RUTINA ===
+    path('usuario-rutinas/', UsuarioRutinaListCreateView.as_view(), name='usuario-rutinas-list-create'),
+    path('usuario-rutinas/<int:pk>/', UsuarioRutinaDetailView.as_view(), name='usuario-rutinas-detail'),
+
+    # === HISTORIAL ACTIVIDADES ===
+    path('historial-actividades/', HistorialActividadesListCreateView.as_view(), name='historialactividades-list-create'),
+    path('historial-actividades/<int:pk>/', HistorialActividadesDetailView.as_view(), name='historialactividades-detail'),
+
+    # === PROGRESO DEL USUARIO ===
+    path('progresos-usuario/', ProgresoUsuarioListCreateView.as_view(), name='progresousuario-list-create'),
+    path('progresos-usuario/<int:pk>/', ProgresoUsuarioDetailView.as_view(), name='progresousuario-detail'),
+    path('usuarios/<int:user_id>/avances/', ProgresoUsuarioByUserView.as_view(), name='progreso-usuario'),
+
+    # === IA COMPARACIÓN ===
+    path('comparaciones-ia/', ComparacionIAListCreateView.as_view(), name='comparacionia-list-create'),
+    path('comparaciones-ia/<int:pk>/', ComparacionIADetailView.as_view(), name='comparacionia-detail'),
+    path('comparar-fotos/', comparar_fotos_view, name='comparar-fotos'),
 
     # === LOGROS ===
-    path('logros/', views.LogroListCreateView.as_view(), name='logro-list-create'),
-    path('logros/<int:pk>/', views.LogroDetailView.as_view(), name='logro-detail'),
+    path('logros/', LogroListCreateView.as_view(), name='logro-list-create'),
+    path('logros/<int:pk>/', LogroDetailView.as_view(), name='logro-detail'),
 
-    # === USUARIO LOGROS ===
-    path('usuario-logros/', views.UsuarioLogroListCreateView.as_view(), name='usuariologro-list-create'),
-    path('usuario-logros/<int:pk>/', views.UsuarioLogroDetailView.as_view(), name='usuariologro-detail'),
+    # === USUARIO - LOGROS ===
+    path('usuario-logros/', UsuarioLogroListCreateView.as_view(), name='usuariologro-list-create'),
+    path('usuario-logros/<int:pk>/', UsuarioLogroDetailView.as_view(), name='usuariologro-detail'),
 
-    # === BIENESTAR CONTENIDO ===
-    path('bienestar-contenido/', views.BienestarContenidoListCreateView.as_view(), name='bienestarcontenido-list-create'),
-    path('bienestar-contenido/<int:pk>/', views.BienestarContenidoDetailView.as_view(), name='bienestarcontenido-detail'),
+    # === CONTENIDO DE BIENESTAR ===
+    path('bienestar-contenido/', BienestarContenidoListCreateView.as_view(), name='bienestarcontenido-list-create'),
+    path('bienestar-contenido/<int:pk>/', BienestarContenidoDetailView.as_view(), name='bienestarcontenido-detail'),
 
     # === COMUNIDAD / FORO ===
-    path('comunidad-posts/', views.ComunidadPostListCreateView.as_view(), name='comunidadpost-list-create'),
-    path('comunidad-posts/<int:pk>/', views.ComunidadPostDetailView.as_view(), name='comunidadpost-detail'),
+    path('comunidad-posts/', ComunidadPostListCreateView.as_view(), name='comunidadpost-list-create'),
+    path('comunidad-posts/<int:pk>/', ComunidadPostDetailView.as_view(), name='comunidadpost-detail'),
 
-    # === COMENTARIOS EN POSTS ===
-    path('comentario-posts/', views.ComentarioPostListCreateView.as_view(), name='comentariopost-list-create'),
-    path('comentario-posts/<int:pk>/', views.ComentarioPostDetailView.as_view(), name='comentariopost-detail'),
+    # === COMENTARIOS ===
+    path('comentario-posts/', ComentarioPostListCreateView.as_view(), name='comentariopost-list-create'),
+    path('comentario-posts/<int:pk>/', ComentarioPostDetailView.as_view(), name='comentariopost-detail'),
 
-    # === REACCIONES A POSTS ===
-    path('posts/<int:post_id>/toggle-like/', views.ToggleLikePostView.as_view(), name='toggle-like-post'),
+    # === REACCIONES (LIKE) ===
+    path('posts/<int:post_id>/toggle-like/', ToggleLikePostView.as_view(), name='toggle-like-post'),
 
-    # === CHAT (Usuario ↔ Entrenador) ===
-    path('conversaciones/', views.ConversacionListCreateView.as_view(), name='conversacion-list-create'),
-    path('conversaciones/<int:pk>/', views.ConversacionDetailView.as_view(), name='conversacion-detail'),
+    # === CHAT ===
+    path('conversaciones/', ConversacionListCreateView.as_view(), name='conversacion-list-create'),
+    path('conversaciones/<int:pk>/', ConversacionDetailView.as_view(), name='conversacion-detail'),
 
-    # === MENSAJES EN CHAT ===
-    path('mensajes-chat/', views.MensajeChatListCreateView.as_view(), name='mensajechat-list-create'),
-    path('mensajes-chat/<int:pk>/', views.MensajeChatDetailView.as_view(), name='mensajechat-detail'),
+    path('mensajes-chat/', MensajeChatListCreateView.as_view(), name='mensajechat-list-create'),
+    path('mensajes-chat/<int:pk>/', MensajeChatDetailView.as_view(), name='mensajechat-detail'),
 
-     # === MENSAJES CONTACTO EMAIL ===
-    path("contacto/", views.ContactoView.as_view()),
+    # === CONTACTO EMAIL ===
+    path("contacto/", ContactoView.as_view()),
 
-    # === RESUMEN STORED PROCEDURE ===
-    path('resumen/', views.resumen_view, name='resumen'),
-    
+    # === RESUMEN PROCEDURE ===
+    path('resumen/', resumen_view, name='resumen'),
+
+    # === ADMIN ROUTER ===
+    path('', include(router.urls)),
+
+    # === GENERAR RUTINA ===
+    path("generar-rutina/", GenerarRutinaAutomaticaView.as_view(), name="generar_rutina"),
 ]
