@@ -35,12 +35,30 @@ def get_authenticated_user(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def usuario_actual(request):
-    """
-    Devuelve los datos del usuario actualmente autenticado.
-    """
     user = request.user
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+
+    # Buscar el perfil Usuarios vinculado al auth_user
+    try:
+        perfil = Usuarios.objects.get(idUser=user.id)
+    except Usuarios.DoesNotExist:
+        perfil = None
+
+    # Rol desde grupos
+    groups = list(user.groups.values_list("name", flat=True))
+    role = groups[0] if groups else None
+
+    return Response({
+        "id_user": user.id,  # ID del auth_user
+        "perfil_id": perfil.id if perfil else None,  # ID real del modelo Usuarios
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "nombre_completo": f"{user.first_name} {user.last_name}".strip(),
+        "role": role,
+        "perfil": UsuariosSerializer(perfil).data if perfil else None,
+    })
+
 
 
 # ========= USER GROUP ============
@@ -382,18 +400,28 @@ def comparar_fotos_view(request):
         data = json.loads(request.body)
         foto1_url = data.get("foto1_url")
         foto2_url = data.get("foto2_url")
+        user = request.user if request.user.is_authenticated else None
 
         if not foto1_url or not foto2_url:
             return JsonResponse({"error": "Debes enviar foto1_url y foto2_url"}, status=400)
 
-        if EXPECTED_IMAGE_DOMAIN not in foto1_url or EXPECTED_IMAGE_DOMAIN not in foto2_url:
-            return JsonResponse({"error": f"Solo se aceptan URLs de {EXPECTED_IMAGE_DOMAIN}"}, status=400)
-
+        # Ejecutar la función de comparación
         resultado = comparar_progresos_opencv(foto1_url, foto2_url)
-        return JsonResponse({"resultado": resultado}, status=200)
+
+        # Guardar en la base de datos
+        from .models import ComparacionIA  # importa tu modelo
+        comparacion = ComparacionIA.objects.create(
+            usuario=user,
+            foto_anterior=foto1_url,
+            foto_nueva=foto2_url,
+            resultado=resultado  # si quieres guardar como JSON, usa json.dumps(resultado)
+        )
+
+        return JsonResponse({"resultado": resultado, "id": comparacion.id}, status=200)
 
     except Exception as e:
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
+
 
 
 class ProgresoUsuarioByUserView(generics.ListAPIView):
@@ -484,3 +512,26 @@ def resumen_view(request):
             "rutinas": row[3]
         }
     return JsonResponse(data)
+
+
+# ========= GENERAR RUTINA AUTOMATICA ============
+from api.utils.generador_rutinas import generar_rutina_automatica
+
+class GenerarRutinaAutomaticaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        usuario_id = request.user.id
+
+        try:
+            rutina = generar_rutina_automatica(usuario_id)
+            return Response({
+                "success": True,
+                "rutina_id": rutina.id,
+                "mensaje": "Rutina generada correctamente."
+            })
+        except Exception as e:
+            return Response({
+                "success": False,
+                "error": str(e)
+            }, status=400)

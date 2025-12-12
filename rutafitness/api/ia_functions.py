@@ -1,77 +1,50 @@
 import cv2
 import numpy as np
 import requests
-import traceback
-from typing import Optional, Union
+from io import BytesIO
+from PIL import Image
 
-def _descargar_e_decodificar(url: str) -> Optional[np.ndarray]:
-    """Descarga una imagen de una URL y la decodifica usando OpenCV."""
+
+def _cargar_imagen(url):
+    """Descarga una imagen desde una URL y retorna IMG PIL."""
     try:
-        # Petición HTTP con timeout para evitar cuelgues
-        response = requests.get(url, stream=True, timeout=10)
-        response.raise_for_status() # Lanza error para códigos 4xx/5xx
-        
-        # Lee el contenido como un array de bytes
-        arr = np.asarray(bytearray(response.content), dtype=np.uint8)
-        
-        # Decodifica la imagen. cv2.IMREAD_COLOR = 1
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        
-        if img is None:
-            raise ValueError("No se pudo decodificar la imagen.")
-            
-        return img
-    
-    except requests.exceptions.RequestException as e:
-        print(f"Error de red/descarga para {url}: {e}")
-        return None
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        return Image.open(BytesIO(r.content)).convert("RGB")
     except Exception as e:
-        print(f"Error general al procesar la imagen {url}: {e}")
-        return None
+        raise IOError(f"No se pudo descargar/leer la imagen ({url}): {e}")
 
 
-def comparar_progresos_opencv(foto1_url: str, foto2_url: str) -> str:
+def comparar_progresos_opencv(foto_anterior_url, foto_nueva_url):
     """
-    Compara dos imágenes de progreso físico (antes/después) usando la Diferencia Absoluta (AbsDiff) 
-    y devuelve un análisis de texto.
+    Compara dos imágenes de progreso usando OpenCV (AbsDiff).
+    Devuelve un diccionario con análisis y diferencia.
     """
-    img1 = _descargar_e_decodificar(foto1_url)
-    img2 = _descargar_e_decodificar(foto2_url)
-
-    if img1 is None or img2 is None:
-        return "Análisis IA fallido: Al menos una de las imágenes no se pudo descargar o decodificar. Verifique que las URLs sean públicas."
-
     try:
-        # 1. Preprocesamiento: Asegurar el mismo tamaño
-        ancho, alto = 600, 800
-        img1_redim = cv2.resize(img1, (ancho, alto))
-        img2_redim = cv2.resize(img2, (ancho, alto))
-        
-        # 2. Convertir a escala de grises
-        gris1 = cv2.cvtColor(img1_redim, cv2.COLOR_BGR2GRAY)
-        gris2 = cv2.cvtColor(img2_redim, cv2.COLOR_BGR2GRAY)
+        img1_pil = _cargar_imagen(foto_anterior_url)
+        img2_pil = _cargar_imagen(foto_nueva_url)
+    except IOError as e:
+        return {"error": str(e)}
 
-        # 3. Diferencia Absoluta (AbsDiff): Resalta los cambios entre las fotos
-        diferencia = cv2.absdiff(gris1, gris2)
-        
-        # 4. Umbral: Resaltar solo las diferencias significativas (ej. diferencia de tono > 30)
-        _, umbral = cv2.threshold(diferencia, 30, 255, cv2.THRESH_BINARY)
-        
-        # 5. Cálculo: Contar cuántos píxeles cambiaron
-        pixeles_diferentes = np.count_nonzero(umbral)
-        total_pixeles = ancho * alto
-        porcentaje_cambio = (pixeles_diferentes / total_pixeles) * 100
+    img1 = cv2.cvtColor(np.array(img1_pil), cv2.COLOR_RGB2GRAY)
+    img2 = cv2.cvtColor(np.array(img2_pil), cv2.COLOR_RGB2GRAY)
 
-        # 6. Análisis: Generar el informe
-        if porcentaje_cambio > 10:
-            return f"Análisis IA: ¡Excelente progreso! El {porcentaje_cambio:.2f}% de la imagen muestra cambios significativos en forma y composición. Esto indica una alta efectividad de tu rutina."
-        elif porcentaje_cambio > 5:
-            return f"Análisis IA: Progreso detectado. Se ha registrado un {porcentaje_cambio:.2f}% de cambio. Revisa la alineación de tus fotos para un análisis más preciso."
-        else:
-            return f"Análisis IA: Cambio sutil ({porcentaje_cambio:.2f}%). Sugerimos revisar la iluminación y la postura en ambas fotos para asegurar la fiabilidad de la comparación."
+    img2 = cv2.resize(img2, (img1.shape[1], img1.shape[0]))
 
-    except Exception as e:
-        print(f"Error interno de OpenCV: {traceback.format_exc()}")
-        return f"Error fatal durante el procesamiento de imágenes: {e}"
+    diff = cv2.absdiff(img1, img2)
+    mean_diff = np.mean(diff)
 
-        
+    if mean_diff < 5:
+        resultado = "Similitud muy alta (cambio mínimo)."
+    elif mean_diff < 20:
+        resultado = "Progreso leve o cambio sutil."
+    elif mean_diff < 50:
+        resultado = "Progreso notable."
+    else:
+        resultado = "Cambio extremo (gran diferencia visual)."
+
+    return {
+        "analisis": resultado,
+        "diferencia_media":  float(mean_diff),
+        "nota": "Mientras más alta la diferencia, mayor el cambio entre fotos."
+    }

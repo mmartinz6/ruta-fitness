@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import '../loginUsuario/FormLogin.css';
-import login from '../../services/servicesLogin';
+import "../loginUsuario/FormLogin.css";
+import login from "../../services/servicesLogin";
 
 function FormLogin() {
-  const [identificador, setIdentificador] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [identificador, setIdentificador] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -20,42 +21,29 @@ function FormLogin() {
     }
 
     try {
-      const datos = await login.loginUsuario({
+      // 👉 Login completo (tokens + usuario) hecho desde el SERVICE
+      const resultado = await login.loginUsuario({
         username: identificador,
         password: password,
       });
 
-      localStorage.setItem("access", datos.access);
-      localStorage.setItem("refresh", datos.refresh);
+      const usuario = resultado.usuario;
 
-      if (datos.role) {
-        localStorage.setItem("role", datos.role);
+      if (!usuario) {
+        setErrorMsg("No se pudo obtener la información del usuario.");
+        return;
       }
 
-      if (datos.id) {
-        localStorage.setItem("userId", datos.id);
-      }
-
-      const nombreUsuario =
-        datos.username ||
-        datos.user?.username ||
-        datos.profile?.username ||
-        identificador;
-
-      localStorage.setItem("username", nombreUsuario);
-      localStorage.setItem("auth", "true");
-
-      // Redirección automática según rol
-      if (datos.role === "Administrador") {
+      // 👉 Redirección automática por rol
+      if (usuario.role === "Administrador") {
         navigate("/dashboardadmin");
-      } else if (datos.role === "Entrenador") {
+      } else if (usuario.role === "Entrenador") {
         navigate("/dashboardentrenador");
       } else {
         navigate(redirectTo);
       }
 
       window.location.reload();
-
     } catch (error) {
       console.error("Error en login:", error);
       setErrorMsg("Usuario o contraseña incorrectos.");
