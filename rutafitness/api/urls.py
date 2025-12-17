@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include 
 from rest_framework.routers import DefaultRouter
 from .views import *
 from .views import ProgresoUsuarioByUserView
@@ -45,6 +45,7 @@ urlpatterns = [
     # === USUARIO - RUTINA ===
     path('usuario-rutinas/', UsuarioRutinaListCreateView.as_view(), name='usuario-rutinas-list-create'),
     path('usuario-rutinas/<int:pk>/', UsuarioRutinaDetailView.as_view(), name='usuario-rutinas-detail'),
+    path('usuario-rutinas/<int:rutina_id>/completar/', completar_rutina, name='completar_rutina'),
 
     # === HISTORIAL ACTIVIDADES ===
     path('historial-actividades/', HistorialActividadesListCreateView.as_view(), name='historialactividades-list-create'),
@@ -84,11 +85,9 @@ urlpatterns = [
     path('posts/<int:post_id>/toggle-like/', ToggleLikePostView.as_view(), name='toggle-like-post'),
 
     # === CHAT ===
-    path('conversaciones/', ConversacionListCreateView.as_view(), name='conversacion-list-create'),
-    path('conversaciones/<int:pk>/', ConversacionDetailView.as_view(), name='conversacion-detail'),
-
-    path('mensajes-chat/', MensajeChatListCreateView.as_view(), name='mensajechat-list-create'),
-    path('mensajes-chat/<int:pk>/', MensajeChatDetailView.as_view(), name='mensajechat-detail'),
+    path("conversaciones/", ConversacionListCreateView.as_view()),
+    path("conversaciones/<int:pk>/", ConversacionDetailView.as_view()),
+    path("mensajes-chat/", MensajeChatListCreateView.as_view()),
 
     # === CONTACTO EMAIL ===
     path("contacto/", ContactoView.as_view()),
@@ -101,4 +100,21 @@ urlpatterns = [
 
     # === GENERAR RUTINA ===
     path("generar-rutina/", GenerarRutinaAutomaticaView.as_view(), name="generar_rutina"),
+
+    # === PROGRESO SERIES ===
+    path('progreso-series/', ProgresoSerieListCreateView.as_view(), name='progreso-series-list-create'),
+    path('progreso-series/<int:pk>/', ProgresoSerieDetailView.as_view(), name='progreso-series-detail'),
+
+    # === RUTINA DEL DÍA Y SERIES ===
+    path('rutina/dia/', rutina_del_dia, name='rutina-del-dia'),
+    path('rutina/serie/completar/', completar_serie_view, name='completar-serie'),
+
+    # === ENTRENADOR: RUTINAS AUTOGENERADAS ===
+    path('entrenador/rutinas/', RutinasAutogeneradasEntrenadorView.as_view(), name='entrenador-rutinas'),
+    path('entrenador/rutina/<int:pk>/editar/', EditarRutinaEntrenadorView.as_view(), name='editar-rutina-entrenador'),
+
+    # === ACTUALIZAR USUARIO ===
+    path('update-nombre/<int:user_id>/', actualizar_nombre),
+    path('update-email/<int:user_id>/', actualizar_email),
+    path('update-password/<int:user_id>/', actualizar_password),
 ]

@@ -105,13 +105,23 @@ class RutinaSerializer(serializers.ModelSerializer):
 
 
 class UsuarioRutinaSerializer(serializers.ModelSerializer):
+    rutina = RutinaSerializer(read_only=True)
     rutina_nombre = serializers.CharField(source='rutina.nombre', read_only=True)
     usuario_username = serializers.CharField(source='usuario.username', read_only=True)
 
     class Meta:
         model = UsuarioRutina
-        fields = '__all__'
-        read_only_fields = ('fecha_asignacion', 'usuario')
+        fields = (
+            'id',
+            'usuario',
+            'usuario_username',
+            'rutina',
+            'rutina_nombre',
+            'estado',
+            'fecha_asignacion',
+            'fecha_fin',
+        )
+        read_only_fields = ('usuario', 'fecha_asignacion')
 
 
 # HISTORIAL DE ACTIVIDADES
@@ -123,6 +133,17 @@ class HistorialActividadesSerializer(serializers.ModelSerializer):
         model = HistorialActividades
         fields = '__all__'
         read_only_fields = ('usuario', 'rutina')
+
+
+#PROGRESO SERIES
+class ProgresoSerieSerializer(serializers.ModelSerializer):
+    ejercicio_nombre = serializers.CharField(source='ejercicio.nombre', read_only=True)
+    usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+
+    class Meta:
+        model = ProgresoSerie
+        fields = ['id', 'usuario', 'usuario_username', 'usuario_rutina', 'ejercicio', 'ejercicio_nombre', 'serie_numero', 'completado', 'fecha']
+        read_only_fields = ['usuario', 'fecha']
 
 
 # PROGRESO Y COMPARACIÓN IA
@@ -142,22 +163,47 @@ class ComparacionIASerializer(serializers.ModelSerializer):
 
 
 # COMUNIDAD Y CHAT
+#------------------------------------------ chat entre entrenador y alumno ------------------------------------------#
+
+from .models import Conversacion, MensajeChat
+
 class ConversacionSerializer(serializers.ModelSerializer):
-    entrenador_username = serializers.CharField(source='entrenador.username', read_only=True)
-    alumno_username = serializers.CharField(source='alumno.username', read_only=True)
+    entrenador_username = serializers.CharField(source="entrenador.username", read_only=True)
+    alumno_username = serializers.CharField(source="alumno.username", read_only=True)
 
     class Meta:
         model = Conversacion
-        fields = '__all__'
+        fields = [
+            "id",
+            "entrenador",
+            "entrenador_username",
+            "alumno",
+            "alumno_username",
+            "fecha_inicio",
+            "ultima_actualizacion",
+        ]
+        read_only_fields = ["fecha_inicio", "ultima_actualizacion"]
 
 
 class MensajeChatSerializer(serializers.ModelSerializer):
-    usuario_emisor_username = serializers.CharField(source='usuario_emisor.username', read_only=True)
+    usuario_emisor_username = serializers.CharField(
+        source="usuario_emisor.username",
+        read_only=True
+    )
 
     class Meta:
         model = MensajeChat
-        fields = '__all__'
-        read_only_fields = ('usuario_emisor', 'fecha_envio')
+        fields = [
+            "id",
+            "conversacion",
+            "usuario_emisor",
+            "usuario_emisor_username",
+            "contenido",
+            "archivo_url",
+            "fecha_envio",
+            "leido",
+        ]
+        read_only_fields = ["usuario_emisor", "fecha_envio", "leido"]
 
 
 class ComentarioPostSerializer(serializers.ModelSerializer):
@@ -276,3 +322,41 @@ class ContactoSerializer(serializers.Serializer):
     email = serializers.EmailField()
     subject = serializers.CharField(max_length=200)
     message = serializers.CharField()
+
+
+# ==================== RUTINA DIARIA ====================
+class RutinaDiaEjercicioSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nombre = serializers.CharField()
+    descripcion = serializers.CharField()
+    video_url = serializers.CharField(allow_null=True)
+    repeticiones = serializers.CharField()
+    descanso = serializers.CharField()
+    series_completadas = serializers.IntegerField()
+    total_series = serializers.IntegerField()
+    activo = serializers.BooleanField()
+
+
+class CompletarSerieSerializer(serializers.Serializer):
+    ejercicio_id = serializers.IntegerField()
+    serie_numero = serializers.IntegerField()
+
+
+# Serializer para ejercicios de la rutina editable por entrenador
+class RutinaEjercicioEntrenadorSerializer(serializers.ModelSerializer):
+    nombre_ejercicio = serializers.CharField(source='ejercicio.nombre', read_only=True)
+    descripcion = serializers.CharField(source='ejercicio.descripcion', read_only=True)
+    video_url = serializers.CharField(source='ejercicio.video_url', read_only=True)
+
+    class Meta:
+        model = RutinaEjercicio
+        fields = ['id', 'ejercicio', 'nombre_ejercicio', 'descripcion', 'video_url', 'orden']
+
+# Serializer para rutina completa editable por entrenador
+class UsuarioRutinaEntrenadorSerializer(serializers.ModelSerializer):
+    usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+    ejercicios = RutinaEjercicioEntrenadorSerializer(many=True, source='rutina.rutina_ejercicios')  # <-- CORRECCIÓN
+
+    class Meta:
+        model = UsuarioRutina
+        fields = ['id', 'usuario', 'usuario_username', 'rutina', 'estado', 'ejercicios']

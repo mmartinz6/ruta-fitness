@@ -12,7 +12,7 @@ function FormLogin() {
   const location = useLocation();
 
   const params = new URLSearchParams(location.search);
-  const redirectTo = params.get("redirect") || "/";
+  const redirectTo = params.get("redirect") || "/inicio1";
 
   async function manejarLogin() {
     if (!identificador || !password) {

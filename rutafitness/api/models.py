@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 
 class Usuarios(models.Model):
     # Clave foránea al usuario de autenticación de Django
@@ -91,17 +93,37 @@ class RutinaEjercicio(models.Model):
         return f"{self.rutina.nombre} - {self.ejercicio.nombre}"
 
 
+# models.py (adiciones y ajustes)
+
 class UsuarioRutina(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rutinas_asignadas")
     rutina = models.ForeignKey(Rutina, on_delete=models.CASCADE, related_name="usuarios_asignados")
     fecha_asignacion = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=20, choices=[
-        ('activa', 'Activa'),
-        ('finalizada', 'Finalizada')
-    ])
+    fecha_fin = models.DateField(null=True, blank=True)
+    estado = models.CharField(
+        max_length=20,
+        choices=[('activa', 'Activa'), ('finalizada', 'Finalizada'), ('vencida', 'Vencida')],
+        default='activa'
+    )
+    fecha_ultima_sesion = models.DateField(null=True, blank=True)  # <-- Nuevo campo
 
-    def __str__(self):
-        return f"{self.usuario.username} - {self.rutina.nombre} ({self.estado})"
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['usuario'],
+                condition=models.Q(estado='activa'),
+                name='una_sola_rutina_activa_por_usuario'
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.fecha_fin:
+            self.fecha_fin = timezone.now().date() + timedelta(days=7)
+        super().save(*args, **kwargs)
+
+    def sesion_del_dia_completada(self):
+        return self.fecha_ultima_sesion == timezone.now().date()
+
 
 
 #  HISTORIAL DE ACTIVIDADES 
@@ -116,6 +138,26 @@ class HistorialActividades(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.fecha_realizacion.strftime('%Y-%m-%d')}"
+    
+# Registrar progreso por serie
+class ProgresoSerie(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progreso_series")
+    usuario_rutina = models.ForeignKey(UsuarioRutina, on_delete=models.CASCADE, related_name="progreso_series")
+    ejercicio = models.ForeignKey(Ejercicio, on_delete=models.CASCADE)
+    serie_numero = models.IntegerField()
+    completado = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'usuario_rutina', 'ejercicio', 'serie_numero')
+
+    def completar_serie(self):
+        if not self.completado:
+            self.completado = True
+            self.save()
+            # Actualizar fecha de última sesión
+            self.usuario_rutina.fecha_ultima_sesion = timezone.now().date()
+            self.usuario_rutina.save()
 
 
 # PROGRESO Y COMPARACIÓN

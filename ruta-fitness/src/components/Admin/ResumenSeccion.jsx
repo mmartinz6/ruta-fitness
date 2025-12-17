@@ -86,5 +86,3 @@ function ResumenSeccion({ setActivePage }) {
 }
 
 export default ResumenSeccion;
-
-
