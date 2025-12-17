@@ -1,10 +1,10 @@
 import React from 'react';
 // ELIMINADO: import MainLayout from '../components/layout/MainLayout'; <-- Se removió esta importación
-import ProgressChart from '../components/dashboard/ProgressChart.jsx'; // <-- Ruta corregida con .jsx
+/* import ProgressChart from '../components/dashboard/ProgressChart.jsx'; // <-- Ruta corregida con .jsx
 import AchievementsCard from '../components/dashboard/AchievementsCard.jsx'; // <-- Ruta corregida con .jsx
 import RoutineCard from '../components/dashboard/RoutineCard.jsx'; // <-- Ruta corregida con .jsx
 import RecentActivity from '../components/dashboard/RecentActivity.jsx'; // <-- Ruta corregida con .jsx
-
+ */
 // Mock data para las rutinas
 const mockRoutines = [
     { id: 1, name: 'Rutina Full Body', duration: '45 min', focus: 'Fuerza', color: 'bg-indigo-600' },

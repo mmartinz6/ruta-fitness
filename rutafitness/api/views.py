@@ -160,11 +160,19 @@ class RutinaEjercicioDetailView(RetrieveUpdateDestroyAPIView):
 # ========= USUARIO RUTINA ============
 class UsuarioRutinaListCreateView(ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = UsuarioRutina.objects.all()
     serializer_class = UsuarioRutinaSerializer
+
+    def get_queryset(self):
+        return (
+            UsuarioRutina.objects
+            .filter(usuario=self.request.user)
+            .select_related('rutina', 'usuario')
+            .prefetch_related('rutina__rutina_ejercicios__ejercicio')
+        )
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
 
 
 class UsuarioRutinaDetailView(RetrieveUpdateDestroyAPIView):
@@ -345,38 +353,63 @@ class ToggleLikePostView(APIView):
             return Response({"liked": True, "num_reacciones": post.reacciones.count()})
 
 # ========= CONVERSACION ============
-class ConversacionListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.AllowAny]
-    queryset = Conversacion.objects.all()
+from django.db.models import Q
+from .models import Conversacion, MensajeChat
+from .serializers import ConversacionSerializer, MensajeChatSerializer
+
+# ===============================
+# CONVERSACIONES
+# ===============================
+
+class ConversacionListCreateView(generics.ListCreateAPIView):
     serializer_class = ConversacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Conversacion.objects.filter(
+            Q(entrenador=user) | Q(alumno=user)
+        ).order_by("-ultima_actualizacion")
 
     def perform_create(self, serializer):
-        user = get_authenticated_user(self.request)
-        conversacion = serializer.save()
-        conversacion.participantes.add(user)
-        conversacion.save()
+        user = self.request.user
+        entrenador_id = self.request.data.get("entrenador")
+
+        if user.role == "Entrenador":
+            serializer.save(entrenador=user, alumno_id=entrenador_id)
+        else:
+            serializer.save(alumno=user, entrenador_id=entrenador_id)
 
 
-class ConversacionDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+class ConversacionDetailView(generics.RetrieveAPIView):
     queryset = Conversacion.objects.all()
     serializer_class = ConversacionSerializer
+    permission_classes = [permissions.AllowAny]
 
 
-# ========= MENSAJE CHAT ============
-class MensajeChatListCreateView(ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = MensajeChat.objects.all().order_by('-fecha_envio')
+# ===============================
+# MENSAJES
+# ===============================
+class MensajeChatListCreateView(generics.ListCreateAPIView):
     serializer_class = MensajeChatSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        conversacion_id = self.request.query_params.get("conversacion")
+        user = self.request.user
+
+        if not conversacion_id:
+            return MensajeChat.objects.none()
+
+        return MensajeChat.objects.filter(
+            conversacion_id=conversacion_id
+        ).filter(
+            Q(conversacion__entrenador=user) |
+            Q(conversacion__alumno=user)
+        ).order_by("fecha_envio")
 
     def perform_create(self, serializer):
         serializer.save(usuario_emisor=self.request.user)
-
-
-class MensajeChatDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
-    queryset = MensajeChat.objects.all()
-    serializer_class = MensajeChatSerializer
 
 
 # ========= TOKEN ============
@@ -517,21 +550,257 @@ def resumen_view(request):
 # ========= GENERAR RUTINA AUTOMATICA ============
 from api.utils.generador_rutinas import generar_rutina_automatica
 
+from datetime import timedelta
+
 class GenerarRutinaAutomaticaView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        usuario_id = request.user.id
+        # Verificar si ya tiene rutina activa
+        existe = UsuarioRutina.objects.filter(
+            usuario=request.user,
+            estado='activa'
+        ).exists()
 
-        try:
-            rutina = generar_rutina_automatica(usuario_id)
-            return Response({
-                "success": True,
-                "rutina_id": rutina.id,
-                "mensaje": "Rutina generada correctamente."
-            })
-        except Exception as e:
-            return Response({
-                "success": False,
-                "error": str(e)
-            }, status=400)
+        if existe:
+            return Response(
+                {"error": "Ya tienes una rutina activa"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        usuario_rutina = generar_rutina_automatica(request.user.id)
+
+        return Response({
+            "id": usuario_rutina.id,
+            "estado": usuario_rutina.estado,
+            "fecha_inicio": usuario_rutina.fecha_asignacion,
+            "fecha_fin": usuario_rutina.fecha_fin,
+            "rutina": {
+                "id": usuario_rutina.rutina.id,
+                "nombre": usuario_rutina.rutina.nombre
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def completar_rutina(request, rutina_id):
+    try:
+        rutina = UsuarioRutina.objects.get(
+            id=rutina_id,
+            usuario=request.user,
+            estado='activa'
+        )
+        rutina.estado = 'finalizada'
+        rutina.save()
+
+        return Response(
+            {"mensaje": "Rutina completada correctamente"},
+            status=status.HTTP_200_OK
+        )
+
+    except UsuarioRutina.DoesNotExist:
+        return Response(
+            {"error": "No se encontró una rutina activa"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+
+
+from django.utils import timezone
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_rutinas(request):
+    rutinas = UsuarioRutina.objects.filter(
+        usuario=request.user
+    ).select_related('rutina')
+
+    hoy = timezone.now().date()
+    data = []
+
+    for ur in rutinas:
+        if ur.estado == 'activa' and ur.fecha_fin and hoy > ur.fecha_fin:
+            ur.estado = 'vencida'
+            ur.save()
+
+        ejercicios = RutinaEjercicio.objects.filter(
+            rutina=ur.rutina
+        ).select_related('ejercicio').order_by('orden')
+
+        data.append({
+            "id": ur.id,
+            "estado": ur.estado,
+            "fecha_inicio": ur.fecha_asignacion,
+            "fecha_fin": ur.fecha_fin,
+            "rutina": {
+                "id": ur.rutina.id,
+                "nombre": ur.rutina.nombre,
+                "nivel": ur.rutina.nivel,
+                "ejercicios": [
+                    {
+                        "id": re.ejercicio.id,
+                        "nombre": re.ejercicio.nombre,
+                        "descripcion": re.ejercicio.descripcion,
+                        "video_url": re.ejercicio.video_url,
+                        "imagen_url": re.ejercicio.imagen_url,
+                        "repeticiones": re.repeticiones,
+                        "descanso": re.descanso,
+                        "orden": re.orden
+                    }
+                    for re in ejercicios
+                ]
+            }
+        })
+
+    return Response(data)
+
+
+class ProgresoSerieListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProgresoSerieSerializer
+
+    def get_queryset(self):
+        return ProgresoSerie.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+        
+
+class ProgresoSerieDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = ProgresoSerie.objects.all()
+    serializer_class = ProgresoSerieSerializer
+
+
+from api.utils.generador_rutinas import obtener_rutina_del_dia, completar_serie
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def rutina_del_dia(request):
+    data, mensaje = obtener_rutina_del_dia(request.user.id)
+
+    if mensaje:
+        return Response({"mensaje": mensaje}, status=status.HTTP_200_OK)
+
+    # data YA contiene:
+    # {
+    #   ejercicios_rutina: [...],
+    #   total_circuitos: X
+    # }
+    return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def completar_serie_view(request):
+    serializer = CompletarSerieSerializer(data=request.data)
+    if serializer.is_valid():
+        ejercicio_id = serializer.validated_data['ejercicio_id']
+        serie_numero = serializer.validated_data['serie_numero']
+        ok, mensaje = completar_serie(request.user.id, ejercicio_id, serie_numero)
+        if ok:
+            return Response({"mensaje": mensaje}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": mensaje}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Lista todas las rutinas asignadas a usuarios
+class RutinasAutogeneradasEntrenadorView(generics.ListAPIView):
+    queryset = UsuarioRutina.objects.all().select_related('usuario', 'rutina').prefetch_related('rutina__rutina_ejercicios__ejercicio')
+    serializer_class = UsuarioRutinaEntrenadorSerializer
+    permission_classes = [permissions.IsAuthenticated]  # o personalizar a grupo entrenador
+
+# Edita una rutina específica (agregar/quitar/reordenar ejercicios y cambiar estado)
+class EditarRutinaEntrenadorView(generics.RetrieveUpdateAPIView):
+    queryset = UsuarioRutina.objects.all().select_related('usuario', 'rutina').prefetch_related('rutina__rutina_ejercicios__ejercicio')
+    serializer_class = UsuarioRutinaEntrenadorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Cambiar estado si viene en la request
+        estado = request.data.get('estado')
+        if estado:
+            instance.estado = estado
+            instance.save()
+
+        # Manejo de ejercicios: agregar, quitar, reordenar
+        ejercicios_data = request.data.get('ejercicios')
+        if ejercicios_data:
+            for idx, ejercicio_item in enumerate(ejercicios_data, start=1):
+                ejercicio_id = ejercicio_item.get('ejercicio')
+                accion = ejercicio_item.get('accion')  # "agregar", "quitar", "reordenar"
+
+                if accion == "quitar":
+                    RutinaEjercicio.objects.filter(rutina=instance.rutina, ejercicio_id=ejercicio_id).delete()
+                elif accion == "agregar":
+                    RutinaEjercicio.objects.create(rutina=instance.rutina, ejercicio_id=ejercicio_id, orden=idx)
+                elif accion == "reordenar":
+                    obj = RutinaEjercicio.objects.filter(rutina=instance.rutina, ejercicio_id=ejercicio_id).first()
+                    if obj:
+                        obj.orden = idx
+                        obj.save()
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# ----------------- CAMBIAR NOMBRE --------------------
+@api_view(['PUT'])
+def actualizar_nombre(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        nuevo_nombre = request.data.get("nombre")
+
+        if not nuevo_nombre:
+            return Response({"error": "Nombre requerido"}, status=400)
+
+        user.first_name = nuevo_nombre
+        user.save()
+
+        return Response({"message": "Nombre actualizado correctamente"}, status=200)
+
+    except User.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=404)
+
+
+# ----------------- CAMBIAR EMAIL --------------------
+@api_view(['PUT'])
+def actualizar_email(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        nuevo_email = request.data.get("email")
+
+        if not nuevo_email:
+            return Response({"error": "Correo requerido"}, status=400)
+
+        user.email = nuevo_email
+        user.save()
+
+        return Response({"message": "Correo actualizado correctamente"}, status=200)
+
+    except User.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=404)
+
+
+# ----------------- CAMBIAR PASSWORD --------------------
+@api_view(['PUT'])
+def actualizar_password(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        nueva_pass = request.data.get("password")
+
+        if not nueva_pass:
+            return Response({"error": "Contraseña requerida"}, status=400)
+
+        user.set_password(nueva_pass)
+        user.save()
+
+        return Response({"message": "Contraseña actualizada correctamente"}, status=200)
+
+    except User.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=404)
+

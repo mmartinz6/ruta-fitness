@@ -1,19 +1,34 @@
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 
 import ResumenEntrenadorSeccion from './ResumenEntrenadorSeccion';
 import UsuariosEntrenadorSeccion from './UsuariosEntrenadorSeccion';
-import RutinasGereradasSeccion from './RutinasGereradasSeccion';
+import RutinasGereradasSeccion from './rutinasGeneradas/RutinasGereradasSeccion';
 import ChatSeccion from './ChatSeccion';
+import EjerciciosSeccion from '../Entrenador/ejercicios/EjerciciosSeccion';
 
 function EntrenadorDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const [showSidebar, setShowSidebar] = useState(true);
-  const currentUser = { name: 'Entrenador' };
+  const [currentUser, setCurrentUser] = useState({ name: '', role: '' });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const username = localStorage.getItem("username") || "Entrenador";
+    const role = localStorage.getItem("role") || "Entrenador";
+    setCurrentUser({ name: username, role });
+  }, []);
+
+  function cerrarSesion() {
+    localStorage.clear();
+    navigate("/login");
+  }
 
   const menuItems = [
     { label: 'Resumen', page: 'overview' },
-    { label: 'Usuarios', page: 'users' },
+   /*  { label: 'Usuarios', page: 'users' }, */
     { label: 'Rutinas gereradas', page: 'routines' },
+    { label: 'Ejercicios', page: 'exercises' },
     { label: 'Chat', page: 'chat' },
   ];
 
@@ -23,6 +38,8 @@ function EntrenadorDashboard() {
         return <UsuariosEntrenadorSeccion setActivePage={setActivePage}/>; 
       case 'routines':
         return <RutinasGereradasSeccion setActivePage={setActivePage}/>;
+      case 'exercises':
+        return <EjerciciosSeccion setActivePage={setActivePage}/>;
       case 'chat':
         return <ChatSeccion setActivePage={setActivePage}/>; 
       default:
@@ -35,22 +52,16 @@ function EntrenadorDashboard() {
 
       {/* SIDEBAR COMPLETAMENTE OCULTABLE */}
       {showSidebar && (
-        <aside
-          className="w-64 text-gray-200 flex flex-col border-r shadow-sm"
-          style={{ backgroundColor: "#2C2C2C", borderColor: "#1F1F1F" }}
-        >
+        <aside className="w-64 bg-gray-900 text-gray-200 flex flex-col border-r border-gray-800 shadow-sm">
           
           {/* Header */}
-          <div className="p-4 flex items-center gap-3" style={{ borderBottom: "1px solid #1F1F1F" }}>
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-              style={{ backgroundColor: "#1B63F2" }}
-            >
-              A
+          <div className="p-4 border-b border-gray-800 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+              {currentUser.name.charAt(0).toUpperCase()}
             </div>
             <div>
               <h2 className="font-semibold text-white">Ruta Fitness</h2>
-              <p className="text-xs text-gray-400">Panel Entrenador</p>
+              <p className="text-xs text-gray-400">{currentUser.role}</p>
             </div>
           </div>
 
@@ -70,51 +81,36 @@ function EntrenadorDashboard() {
               </button>
             ))}
 
-            <div className="my-3" style={{ borderTop: "1px solid #3A3A3A" }} />
+            <div className="my-3 border-t border-gray-700" />
 
-            <button className="w-full p-2 rounded hover:bg-gray-800 text-left text-gray-300 transition">
+            {/* <button
+              className="w-full p-2 rounded hover:bg-gray-800 text-left text-gray-300 transition"
+              onClick={() => navigate("/dashboardentrenador")} // Redirige al perfil o dashboard
+            >
               Mi Perfil
-            </button>
+            </button> */}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 mt-auto" style={{ borderTop: "1px solid #1F1F1F" }}>
+          <div className="p-4 border-t border-gray-800 mt-auto">
             <div className="flex items-center gap-3 mb-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white"
-                style={{ backgroundColor: "#1B63F2" }}
-              >
-                A
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white">
+                {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <p className="text-sm text-white truncate">{currentUser.name}</p>
-                <span
-                  className="text-xs px-2 py-0.5 rounded text-white"
-                  style={{ backgroundColor: "#1B63F2" }}
-                >
-                  Entrenador
+                <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
+                  {currentUser.role}
                 </span>
               </div>
             </div>
 
             <button
-  className="w-full p-2 rounded transition"
-  style={{
-    border: "1px solid #EF4444",
-    color: "#EF4444",
-  }}
-  onMouseEnter={(e) => {
-    e.target.style.backgroundColor = "#B91C1C";
-    e.target.style.color = "white";
-  }}
-  onMouseLeave={(e) => {
-    e.target.style.backgroundColor = "transparent";
-    e.target.style.color = "#EF4444";
-  }}
->
-  Cerrar Sesión
-</button>
-
+              className="w-full p-2 border border-gray-700 text-gray-200 rounded hover:bg-gray-800 transition"
+              onClick={cerrarSesion}
+            >
+              Cerrar Sesión
+            </button>
           </div>
         </aside>
       )}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-    Home, Dumbbell, Activity, Settings, LogOut, Users, Heart, Mail,
-    Menu, X, BarChart2, Bell, User
+  Home, Dumbbell, Activity, Settings, LogOut, Users, Heart, Mail,
+  Menu, X, BarChart2, MessageCircle
 } from 'lucide-react';
 
 function AppHeader({ toggleSidebar }) {
@@ -20,23 +20,11 @@ function AppHeader({ toggleSidebar }) {
             </button>
 
             <div className="flex-1 text-gray-800 text-xl font-semibold hidden lg:block">
-                Panel de Control
-            </div>
-
-            <div className="flex items-center space-x-4">
-                <button className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                    <Bell className="w-6 h-6 text-gray-500 hover:text-indigo-600" />
-                </button>
-
-                <div className="flex items-center space-x-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                    <User className="w-8 h-8 p-1 rounded-full text-indigo-600 bg-indigo-100" />
-                    <span className="text-sm font-medium text-gray-700 hidden sm:block">Usuario</span>
-                </div>
+                TU SALUD ES NUESTRO PRIORIDAD
             </div>
         </header>
     );
 }
-
 
 const navItems = [
     { name: 'Inicio', icon: Home, route: '/inicio' },
@@ -47,6 +35,7 @@ const navItems = [
     { name: 'Bienestar', icon: Heart, route: '/bienestar' },
     { name: 'Contacto', icon: Mail, route: '/contacto' },
     { name: 'Configuración', icon: Settings, route: '/configuracion' },
+    { name: 'Chat', icon: MessageCircle, route: '/chat' }, // ✅ ya funciona
 ];
 
 function Navigation({ currentPage, navigate, toggleSidebar, isOpen, onLogout }) {
@@ -62,13 +51,11 @@ function Navigation({ currentPage, navigate, toggleSidebar, isOpen, onLogout }) 
 
     return (
         <>
-            {/* Overlay en móvil */}
             <div
                 className={`fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden ${isOpen ? 'block' : 'hidden'}`}
                 onClick={toggleSidebar}
             ></div>
 
-            {/* Sidebar */}
             <div
                 className={`
                     flex flex-col h-screen bg-gray-800 w-64 space-y-6 py-7 px-4 fixed inset-y-0 left-0 
@@ -102,7 +89,6 @@ function Navigation({ currentPage, navigate, toggleSidebar, isOpen, onLogout }) 
                     ))}
                 </nav>
 
-                {/* Logout */}
                 <div className="mt-auto space-y-2 border-t border-gray-700 pt-4">
                     <button
                         onClick={onLogout}
@@ -125,14 +111,14 @@ const MainLayout = () => {
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+    // 🔥 CIERRE TOTAL DE SESIÓN
     const handleLogout = () => {
+        localStorage.clear();
         navigate('/login');
     };
 
     return (
         <div className="flex min-h-screen bg-gray-100 font-sans overflow-x-hidden">
-
-            {/* SIDEBAR */}
             <Navigation
                 isOpen={isSidebarOpen}
                 toggleSidebar={toggleSidebar}
@@ -141,16 +127,11 @@ const MainLayout = () => {
                 onLogout={handleLogout}
             />
 
-            {/* ESPACIO PARA EL SIDEBAR EN DESKTOP */}
             <div className="hidden lg:block w-64 h-screen flex-shrink-0"></div>
 
-            {/* CONTENIDO PRINCIPAL */}
             <div className="flex-1 flex flex-col">
-
-                {/* HEADER */}
                 <AppHeader toggleSidebar={toggleSidebar} />
 
-                {/* PÁGINAS */}
                 <div className="flex-1 overflow-y-auto pt-16 p-4">
                     <main className="flex-1 bg-gray-100 min-h-full">
                         <Outlet />
